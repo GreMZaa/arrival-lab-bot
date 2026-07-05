@@ -2,7 +2,8 @@
   "name": "arrival-lab-bot",
   "version": "1.0.0",
   "description": "Telegram bot for Arrival Lab",
-  "main": "src/index.js",
+  "main": "gcf_entry.js",
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"
