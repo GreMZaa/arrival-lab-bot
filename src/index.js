@@ -184,10 +184,26 @@ function parseDate(text) {
   if (parts.length !== 3) return null;
   const day = parseInt(parts[0], 10);
   const month = parseInt(parts[1], 10);
-  const year = parseInt(parts[2], 10);
+  let year = parseInt(parts[2], 10);
   if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
   
+  // Handle 2-digit years (e.g. 20 -> 2020, 95 -> 1995)
+  if (year >= 0 && year < 100) {
+    const currentYearShort = new Date().getFullYear() % 100;
+    if (year <= currentYearShort) {
+      year += 2000;
+    } else {
+      year += 1900;
+    }
+  }
+  
   if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > new Date().getFullYear()) {
+    return null;
+  }
+  
+  // Validate actual date existence (e.g. February 30th)
+  const dateObj = new Date(year, month - 1, day);
+  if (dateObj.getFullYear() !== year || dateObj.getMonth() !== month - 1 || dateObj.getDate() !== day) {
     return null;
   }
   
