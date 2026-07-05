@@ -490,7 +490,7 @@ async function notifyNewPurchase(env, telegramId, username, firstName, programNa
 }
 
 async function notifyNewApplication(env, telegramId, username, fullName) {
-  const text = `📝 <b>Новая заявка в агентство</b>\n\nID: <code>${telegramId}</code>\nUsername: @${username || "нет"}\nФИО: ${fullName}`;
+  const text = `📝 <b>Новая заявка в агентство</b>\n\n🔹 ФИО: <b>${fullName}</b>\n🆔 ID: <code>${telegramId}</code>\n👤 Username: @${username || "нет"}\n\n🟡 Статус: <b>Ожидает рассмотрения</b>\n\nОткройте админ-панель чтобы принять или отклонить заявку.`;
   await sendTelegramRequest(env, "sendMessage", { chat_id: env.ADMIN_CHAT_ID, text: text, parse_mode: "HTML" }).catch(() => {});
 }
 
@@ -796,9 +796,12 @@ async function handleCallbackQuery(callback, env, host) {
       text += "Заявок пока нет.";
     } else {
       apps.forEach((app, index) => {
+        const statusEmoji = app.status === 'approved' ? '✅' : app.status === 'rejected' ? '❌' : '🟡';
+        const statusLabel = app.status === 'approved' ? 'Принята' : app.status === 'rejected' ? 'Отклонена' : 'Ожидает';
         text += `${index + 1}. <b>${app.full_name}</b>\n` +
                 `• ID: <code>${app.telegram_id}</code>\n` +
                 `• Рождение: ${app.birth_date}\n` +
+                `• Статус: ${statusEmoji} ${statusLabel}\n` +
                 `• О себе: <i>${app.about}</i>\n\n`;
       });
     }
