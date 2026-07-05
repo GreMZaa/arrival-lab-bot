@@ -496,11 +496,14 @@ async function notifyNewApplication(env, telegramId, username, fullName) {
 
 // ── Update Handlers ─────────────────────────────────────
 
-async function handleMessage(message, env) {
+async function handleMessage(message, env, host) {
   const telegramId = message.from.id;
-  const text = message.text ? message.text.trim() : "";
+  const rawText = message.text ? message.text.trim() : "";
+  // Strip bot mention from commands (e.g. /admin@BotName -> /admin)
+  const text = rawText.replace(/^(\/[a-zA-Z0-9_]+)@[a-zA-Z0-9_]+/, '$1');
   const username = message.from.username;
   const firstName = message.from.first_name || "";
+  const workerHost = host || "https://arrival-lab-bot.succinct-drain.workers.dev";
   
   if (text === "/admin") {
     const isAuthorized = String(message.chat.id) === String(env.ADMIN_CHAT_ID) || String(telegramId) === "405845462";
@@ -510,7 +513,7 @@ async function handleMessage(message, env) {
     const adminKeyboard = {
       inline_keyboard: [
         [
-          { text: "🖥 Открыть веб-админку", web_app: { url: `${host}/admin-panel` } }
+          { text: "🖥 Открыть веб-админку", web_app: { url: `${workerHost}/admin-panel` } }
         ],
         [
           { text: "📊 Статистика", callback_data: "admin_stats" }
