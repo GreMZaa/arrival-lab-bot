@@ -506,11 +506,25 @@ async function handleMessage(message, env) {
     if (!isAuthorized) {
       return;
     }
+    const adminKeyboard = {
+      inline_keyboard: [
+        [
+          { text: "🖥 Открыть веб-админку", web_app: { url: `${host}/admin-panel` } }
+        ],
+        [
+          { text: "📊 Статистика", callback_data: "admin_stats" }
+        ],
+        [
+          { text: "📝 Последние заявки", callback_data: "admin_apps" },
+          { text: "💳 Последние заказы", callback_data: "admin_purchases" }
+        ]
+      ]
+    };
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: message.chat.id,
       text: ADMIN_WELCOME,
       parse_mode: "HTML",
-      reply_markup: adminMenuKeyboard
+      reply_markup: adminKeyboard
     });
     return;
   }
@@ -712,7 +726,7 @@ async function handleMessage(message, env) {
   }
 }
 
-async function handleCallbackQuery(callback, env) {
+async function handleCallbackQuery(callback, env, host) {
   const telegramId = callback.from.id;
   const data = callback.data;
   const username = callback.from.username;
@@ -722,12 +736,26 @@ async function handleCallbackQuery(callback, env) {
   const isAdmin = String(callback.message.chat.id) === String(env.ADMIN_CHAT_ID) || String(telegramId) === "405845462";
   
   if (data === "admin_main" && isAdmin) {
+    const adminKeyboard = {
+      inline_keyboard: [
+        [
+          { text: "🖥 Открыть веб-админку", web_app: { url: `${host}/admin-panel` } }
+        ],
+        [
+          { text: "📊 Статистика", callback_data: "admin_stats" }
+        ],
+        [
+          { text: "📝 Последние заявки", callback_data: "admin_apps" },
+          { text: "💳 Последние заказы", callback_data: "admin_purchases" }
+        ]
+      ]
+    };
     await sendTelegramRequest(env, "editMessageText", {
       chat_id: callback.message.chat.id,
       message_id: messageId,
       text: ADMIN_WELCOME,
       parse_mode: "HTML",
-      reply_markup: adminMenuKeyboard
+      reply_markup: adminKeyboard
     });
     await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
     return;
@@ -935,11 +963,121 @@ async function handleCallbackQuery(callback, env) {
   }
 }
 
-async function handleUpdate(update, env) {
+async function handleUpdate(update, env, host) {
   if (update.message) {
-    await handleMessage(update.message, env);
+    await handleMessage(update.message, env, host);
   } else if (update.callback_query) {
-    await handleCallbackQuery(update.callback_query, env);
+    await handleCallbackQuery(update.callback_query, env, host);
+  }
+}
+
+// ── WebApp Init Data Cryptographic Validator ────────────
+
+async function validateTelegramInitData(initDataString, botToken) {
+  try {
+    const params = new URLSearchParams(initDataString);
+    const hash = params.get("hash");
+    if (!hash) return false;
+    params.delete("hash");
+    
+    const keys = Array.from(params.keys()).sort();
+    const dataCheckString = keys.map(k => `${k}=${params.get(k)}`).join("\n");
+    
+    const encoder = new TextEncoder();
+    
+    const webappsKey = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode("WebApps"),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    const secretKeyBuffer = await crypto.subtle.sign("HMAC", webappsKey, encoder.encode(botToken));
+    
+    const tokenKey = await crypto.subtle.importKey(
+      "raw",
+      secretKeyBuffer,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    const validationBuffer = await crypto.subtle.sign("HMAC", tokenKey, encoder.encode(dataCheckString));
+    const validationHex = Array.from(new Uint8Array(validationBuffer))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+      
+    return validationHex === hash;
+  } catch (e) {
+    console.error("Validation error:", e);
+    return false;
+  }
+}
+
+// ── API Handlers ─────────────────────────────────────────
+
+async function handleAdminData(request, env) {
+  const url = new URL(request.url);
+  
+  const token = url.searchParams.get("token");
+  if (token !== "ArrivalLabSecretToken") {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("twa ")) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const initData = authHeader.substring(4);
+    const isValid = await validateTelegramInitData(initData, env.BOT_TOKEN);
+    if (!isValid) {
+      return new Response("Forbidden", { status: 403 });
+    }
+  }
+  
+  try {
+    const users = await dbQuery(env, "users", "GET", { order: "id.desc" });
+    const purchases = await dbQuery(env, "purchases", "GET", { order: "id.desc" });
+    const apps = await dbQuery(env, "agency_applications", "GET", { order: "id.desc" });
+    
+    return new Response(JSON.stringify({ users, purchases, apps }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*"
+      }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
+
+async function handleUpdatePurchase(request, env) {
+  const url = new URL(request.url);
+  
+  const token = url.searchParams.get("token");
+  if (token !== "ArrivalLabSecretToken") {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("twa ")) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const initData = authHeader.substring(4);
+    const isValid = await validateTelegramInitData(initData, env.BOT_TOKEN);
+    if (!isValid) {
+      return new Response("Forbidden", { status: 403 });
+    }
+  }
+  
+  try {
+    const { id, status } = await request.json();
+    const data = await dbQuery(env, "purchases", "PATCH", { id: `eq.${id}` }, { status });
+    return new Response(JSON.stringify({ success: true, data }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*"
+      }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 }
 
@@ -947,17 +1085,803 @@ async function handleUpdate(update, env) {
 
 export default {
   async fetch(request, env, ctx) {
-    if (request.method !== "POST") {
-      return new Response("OK", { status: 200 });
+    const url = new URL(request.url);
+    const host = url.origin;
+    
+    // Serve HTML page
+    if (url.pathname === "/admin-panel") {
+      return new Response(ADMIN_PANEL_HTML(env), {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
     }
     
-    try {
-      const payload = await request.json();
-      await handleUpdate(payload, env);
-    } catch (e) {
-      console.error("Worker handler error:", e.stack || e.message);
+    // API endpoints
+    if (url.pathname === "/api/admin/data") {
+      return await handleAdminData(request, env);
+    }
+    
+    if (url.pathname === "/api/admin/update-purchase") {
+      return await handleUpdatePurchase(request, env);
+    }
+    
+    // CORS options
+    if (request.method === "OPTIONS") {
+      return new Response("OK", {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization"
+        }
+      });
+    }
+    
+    // Webhook POST update
+    if (request.method === "POST") {
+      try {
+        const payload = await request.json();
+        await handleUpdate(payload, env, host);
+      } catch (e) {
+        console.error("Worker handler error:", e.stack || e.message);
+      }
+      return new Response("OK", { status: 200 });
     }
     
     return new Response("OK", { status: 200 });
   }
 };
+
+const ADMIN_PANEL_HTML = (env) => `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Arrival Lab Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-color: #F8F9FD;
+      --card-bg: #FFFFFF;
+      --primary: #5F00F5;
+      --primary-light: #EBE3FF;
+      --text-main: #0D1527;
+      --text-muted: #5F6B82;
+      --border-color: rgba(95, 0, 245, 0.06);
+      --shadow: 0px 4px 16px rgba(14, 23, 44, 0.04);
+      --success: #00B159;
+      --success-light: #E6F8EE;
+      --warning: #FF9F00;
+      --warning-light: #FFF5E6;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding-bottom: 90px;
+    }
+    
+    /* Top Header Bar */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .profile-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .upgrade-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    /* Container */
+    .container {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    /* Purple Hero Card */
+    .hero-card {
+      background: var(--primary);
+      color: white;
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0px 8px 24px rgba(95, 0, 245, 0.2);
+    }
+    
+    .hero-title {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .hero-value {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    
+    .hero-sub {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    .hero-btn {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background: white;
+      color: var(--primary);
+      border: none;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    /* 2x2 Grid Blocks */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    
+    .stat-box {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .stat-box-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .stat-box-val {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    
+    /* Progress Card */
+    .progress-card {
+      background: #EDF3FC;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    
+    .progress-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .progress-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid var(--primary);
+      border-top-color: transparent;
+      animation: spin 1s linear infinite;
+    }
+    
+    .progress-info-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    
+    .progress-info-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    
+    /* List Card */
+    .list-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    
+    .list-card-header {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    }
+    
+    .list-item:last-child {
+      border-bottom: none;
+    }
+    
+    .item-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .item-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .item-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .item-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .item-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    
+    .item-right {
+      text-align: right;
+    }
+    
+    .item-value {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .item-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    
+    .badge-pending {
+      background: var(--warning-light);
+      color: var(--warning);
+    }
+    
+    .badge-paid {
+      background: var(--success-light);
+      color: var(--success);
+    }
+    
+    /* Tab View Management */
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 68px;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0px -4px 16px rgba(14, 23, 44, 0.04);
+      z-index: 100;
+    }
+    
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 25%;
+      padding: 8px 0;
+    }
+    
+    .nav-item.active {
+      color: var(--primary);
+    }
+    
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+    
+    /* Search Input */
+    .search-box {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+    
+    .search-box input {
+      border: none;
+      outline: none;
+      width: 100%;
+      font-size: 14px;
+      background: transparent;
+    }
+    
+    /* Action Buttons */
+    .btn-action {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+    
+    .btn-action.btn-secondary {
+      background: #EBE3FF;
+      color: var(--primary);
+    }
+    
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <div class="header-bar">
+    <div class="profile-section">
+      <div class="avatar">AL</div>
+      <span style="font-weight: 700; font-size: 15px;">Arrival Lab</span>
+    </div>
+    <button class="upgrade-btn">Admin</button>
+  </div>
+
+  <div class="container">
+    <!-- ================= OVERVIEW TAB ================= -->
+    <div id="tab-overview" class="tab-content active">
+      <!-- Hero Card -->
+      <div class="hero-card">
+        <div class="hero-title">Активные пользователи <span style="font-size: 11px;">ℹ️</span></div>
+        <div class="hero-value" id="stats-total-users">0</div>
+        <div class="hero-sub" id="stats-users-sub">▲ +0 за неделю</div>
+        <button class="hero-btn" onclick="loadData()">Обновить</button>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-box-title">💳 Заказы</div>
+          <div class="stat-box-val" id="stats-total-orders">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">📝 Заявки</div>
+          <div class="stat-box-val" id="stats-total-apps">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">📊 Конверсия</div>
+          <div class="stat-box-val" id="stats-conversion">0%</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">💰 Обороты</div>
+          <div class="stat-box-val" id="stats-revenue">₽0</div>
+        </div>
+      </div>
+
+      <!-- Progress/Status Card -->
+      <div class="progress-card">
+        <div class="progress-left">
+          <div class="progress-circle"></div>
+          <div>
+            <div class="progress-info-title">Интеграция систем</div>
+            <div class="progress-info-sub" id="sheets-status">Sheets & Supabase активны</div>
+          </div>
+        </div>
+        <span style="color: var(--primary); font-weight: 600;">➔</span>
+      </div>
+
+      <!-- Brain / Recent Activity List Card -->
+      <div class="list-card">
+        <div class="list-card-header">
+          <span>Последняя активность</span>
+          <span style="color: var(--primary); font-size: 12px; cursor: pointer;" onclick="switchTab('apps')">Все заявки</span>
+        </div>
+        <div id="recent-activity-list">
+          <div style="text-align: center; padding: 20px; color: var(--text-muted);">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= USERS TAB ================= -->
+    <div id="tab-users" class="tab-content">
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="users-search" placeholder="Поиск по имени или ID..." oninput="filterUsers()">
+      </div>
+      <div class="list-card">
+        <div class="list-card-header">Зарегистрированные пользователи</div>
+        <div id="users-list">
+          <div style="text-align: center; padding: 20px; color: var(--text-muted);">Пользователей нет.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ORDERS TAB ================= -->
+    <div id="tab-orders" class="tab-content">
+      <div class="list-card">
+        <div class="list-card-header">Заявки на программы</div>
+        <div id="orders-list">
+          <div style="text-align: center; padding: 20px; color: var(--text-muted);">Заказов нет.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= APPLICATIONS TAB ================= -->
+    <div id="tab-apps" class="tab-content">
+      <div class="list-card">
+        <div class="list-card-header">Заявки в агентство</div>
+        <div id="apps-list">
+          <div style="text-align: center; padding: 20px; color: var(--text-muted);">Заявок нет.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-overview" onclick="switchTab('overview')">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Обзор</span>
+    </div>
+    <div class="nav-item" id="nav-users" onclick="switchTab('users')">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>Пользователи</span>
+    </div>
+    <div class="nav-item" id="nav-orders" onclick="switchTab('orders')">
+      <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      <span>Заказы</span>
+    </div>
+    <div class="nav-item" id="nav-apps" onclick="switchTab('apps')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      <span>Заявки</span>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    let store = {
+      users: [],
+      purchases: [],
+      apps: []
+    };
+
+    function getAuthHeader() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) return 'token ' + token;
+      return 'twa ' + tg.initData;
+    }
+
+    async function loadData() {
+      try {
+        const header = getAuthHeader();
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const urlSuffix = token ? '?token=' + token : '';
+        
+        const res = await fetch('/api/admin/data' + urlSuffix, {
+          headers: { 'Authorization': header }
+        });
+        if (!res.ok) throw new Error('Failed to load data');
+        const data = await res.json();
+        
+        store = data;
+        
+        // Render Stats
+        document.getElementById('stats-total-users').innerText = data.users.length;
+        document.getElementById('stats-users-sub').innerText = '▲ +' + data.users.filter(u => {
+          const regDate = new Date(u.registered_at);
+          const diffTime = Math.abs(new Date() - regDate);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays <= 7;
+        }).length + ' за неделю';
+        
+        document.getElementById('stats-total-orders').innerText = data.purchases.length;
+        document.getElementById('stats-total-apps').innerText = data.apps.length;
+        
+        const paidCount = data.purchases.filter(p => p.status === 'paid').length;
+        const totalPurchases = data.purchases.length;
+        const conversion = totalPurchases > 0 ? Math.round((paidCount / totalPurchases) * 100) : 0;
+        document.getElementById('stats-conversion').innerText = conversion + '%';
+        
+        const revenue = data.purchases
+          .filter(p => p.status === 'paid')
+          .reduce((sum, p) => sum + (parseFloat(p.price) || 0), 0);
+        document.getElementById('stats-revenue').innerText = '₽' + revenue.toLocaleString();
+        
+        renderOverviewList();
+        renderUsersList(data.users);
+        renderOrdersList(data.purchases);
+        renderAppsList(data.apps);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabId).classList.add('active');
+      document.getElementById('nav-' + tabId).classList.add('active');
+    }
+
+    function renderOverviewList() {
+      const container = document.getElementById('recent-activity-list');
+      container.innerHTML = '';
+      
+      const allActivity = [];
+      store.users.slice(0, 3).forEach(u => {
+        allActivity.push({
+          type: 'user',
+          title: u.first_name,
+          sub: 'Регистрация • ' + u.birth_date,
+          date: new Date(u.registered_at),
+          badge: 'Регистрация',
+          badgeClass: 'badge-paid'
+        });
+      });
+      
+      store.purchases.slice(0, 3).forEach(p => {
+        allActivity.push({
+          type: 'purchase',
+          title: p.program_name,
+          sub: 'Заказ от пользователя ID ' + p.telegram_id,
+          date: new Date(p.paid_at),
+          badge: p.status === 'paid' ? 'Оплачено' : 'Ожидает',
+          badgeClass: p.status === 'paid' ? 'badge-paid' : 'badge-pending'
+        });
+      });
+
+      allActivity.sort((a, b) => b.date - a.date);
+      
+      if (allActivity.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Активности нет.</div>';
+        return;
+      }
+
+      allActivity.slice(0, 5).forEach(item => {
+        container.innerHTML += \`
+          <div class="list-item">
+            <div class="item-left">
+              <div class="item-icon">\${item.type === 'user' ? '👤' : '💳'}</div>
+              <div class="item-details">
+                <div class="item-title">\${item.title}</div>
+                <div class="item-sub">\${item.sub}</div>
+              </div>
+            </div>
+            <div class="item-right">
+              <span class="item-badge \${item.badgeClass}">\${item.badge}</span>
+            </div>
+          </div>
+        \`;
+      });
+    }
+
+    function renderUsersList(users) {
+      const container = document.getElementById('users-list');
+      container.innerHTML = '';
+      if (users.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Пользователей нет.</div>';
+        return;
+      }
+      users.forEach(u => {
+        container.innerHTML += \`
+          <div class="list-item">
+            <div class="item-left">
+              <div class="item-icon">👤</div>
+              <div class="item-details">
+                <div class="item-title">\${u.first_name} (\${u.username ? '@' + u.username : 'нет'})</div>
+                <div class="item-sub">ID: \${u.telegram_id} • Рождение: \${u.birth_date}</div>
+              </div>
+            </div>
+          </div>
+        \`;
+      });
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('users-search').value.toLowerCase();
+      const filtered = store.users.filter(u => 
+        u.first_name.toLowerCase().includes(q) || 
+        (u.username && u.username.toLowerCase().includes(q)) || 
+        String(u.telegram_id).includes(q)
+      );
+      renderUsersList(filtered);
+    }
+
+    function renderOrdersList(purchases) {
+      const container = document.getElementById('orders-list');
+      container.innerHTML = '';
+      if (purchases.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Заказов нет.</div>';
+        return;
+      }
+      purchases.forEach(p => {
+        let actionButtons = '';
+        if (p.status === 'pending') {
+          actionButtons = \`
+            <div style="margin-top: 8px;">
+              <button class="btn-action" onclick="updateOrderStatus(\${p.id}, 'paid')">Оплачен</button>
+              <button class="btn-action btn-secondary" onclick="updateOrderStatus(\${p.id}, 'rejected')">Отмена</button>
+            </div>
+          \`;
+        }
+        
+        container.innerHTML += \`
+          <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 0;">
+            <div style="display: flex; justify-content: space-between; width: 100%;">
+              <div class="item-left">
+                <div class="item-icon">💳</div>
+                <div class="item-details">
+                  <div class="item-title">\${p.program_name} — ₽\${parseFloat(p.price).toLocaleString()}</div>
+                  <div class="item-sub">Telegram ID: \${p.telegram_id} • \${new Date(p.paid_at).toLocaleString()}</div>
+                </div>
+              </div>
+              <div class="item-right">
+                <span class="item-badge \${p.status === 'paid' ? 'badge-paid' : 'badge-pending'}">\${p.status}</span>
+              </div>
+            </div>
+            \${actionButtons}
+          </div>
+        \`;
+      });
+    }
+
+    async function updateOrderStatus(orderId, status) {
+      try {
+        const header = getAuthHeader();
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const urlSuffix = token ? '?token=' + token : '';
+        
+        const res = await fetch('/api/admin/update-purchase' + urlSuffix, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': header
+          },
+          body: JSON.stringify({ id: orderId, status })
+        });
+        if (!res.ok) throw new Error('Update failed');
+        loadData();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderAppsList(apps) {
+      const container = document.getElementById('apps-list');
+      container.innerHTML = '';
+      if (apps.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Заявок нет.</div>';
+        return;
+      }
+      apps.forEach(a => {
+        container.innerHTML += \`
+          <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="item-icon">📝</div>
+              <div>
+                <div class="item-title">\${a.full_name}</div>
+                <div class="item-sub">Рождение: \${a.birth_date} • ID: \${a.telegram_id}</div>
+              </div>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); background: #F0F2F6; padding: 10px; border-radius: 8px; width: 100%; margin-top: 6px; line-height: 1.4;">
+              <b>О себе:</b> \${a.about}
+            </div>
+          </div>
+        \`;
+      });
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
+`;
+
