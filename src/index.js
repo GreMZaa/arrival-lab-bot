@@ -180,11 +180,24 @@ function confirmPurchase(programKey) {
 }
 
 function parseDate(text) {
-  const parts = text.split(".");
+  // Split by any sequence of non-digit characters
+  const parts = text.trim().split(/[^\d]+/);
   if (parts.length !== 3) return null;
-  const day = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10);
-  let year = parseInt(parts[2], 10);
+  
+  let day, month, year;
+  
+  // If the first part is 4 digits (e.g. YYYY.MM.DD)
+  if (parts[0].length === 4) {
+    year = parseInt(parts[0], 10);
+    month = parseInt(parts[1], 10);
+    day = parseInt(parts[2], 10);
+  } else {
+    // Standard format (DD.MM.YYYY)
+    day = parseInt(parts[0], 10);
+    month = parseInt(parts[1], 10);
+    year = parseInt(parts[2], 10);
+  }
+  
   if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
   
   // Handle 2-digit years (e.g. 20 -> 2020, 95 -> 1995)
