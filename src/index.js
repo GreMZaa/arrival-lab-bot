@@ -268,7 +268,7 @@ async function savePurchase(env, telegramId, programName, price) {
     telegram_id: telegramId,
     program_name: programName,
     price: price,
-    status: "paid"
+    status: "pending"
   });
 }
 
@@ -449,7 +449,7 @@ async function notifyNewUser(env, telegramId, username, firstName, birthDate) {
 }
 
 async function notifyNewPurchase(env, telegramId, username, firstName, programName, price) {
-  const text = `💳 <b>Новая покупка</b>\n\nID: <code>${telegramId}</code>\nUsername: @${username || "нет"}\nИмя: ${firstName}\nПрограмма: ${programName}\nСтоимость: ${price}`;
+  const text = `📝 <b>Заявка на программу</b>\n\nID: <code>${telegramId}</code>\nUsername: @${username || "нет"}\nИмя: ${firstName}\nПрограмма: ${programName}\nСтоимость: ${price}`;
   await sendTelegramRequest(env, "sendMessage", { chat_id: env.ADMIN_CHAT_ID, text: text, parse_mode: "HTML" }).catch(() => {});
 }
 
@@ -743,7 +743,7 @@ async function handleCallbackQuery(callback, env) {
     await sendTelegramRequest(env, "editMessageText", {
       chat_id: telegramId,
       message_id: messageId,
-      text: "🎉 <b>Спасибо за покупку!</b>\n\nМы получили вашу оплату.\nВ ближайшее время специалист Arrival Lab свяжется с вами и предоставит дальнейшие инструкции.",
+      text: "🎉 <b>Заявка отправлена!</b>\n\nВ ближайшее время специалист Arrival Lab свяжется с вами для обсуждения деталей.",
       parse_mode: "HTML"
     });
     
