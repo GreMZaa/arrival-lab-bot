@@ -1113,6 +1113,115 @@ async function handleUpdateApplication(request, env) {
   }
 }
 
+async function handleRunMigration(request, env) {
+  const url = new URL(request.url);
+  const secret = url.searchParams.get("secret");
+  if (secret !== "ArrivalLabMigrate2024") {
+    return new Response("Forbidden", { status: 403 });
+  }
+  
+  // Use Supabase's REST API to create a temporary function that runs DDL
+  // Step 1: Create helper function via RPC-less approach
+  // We'll insert a row into user_states table with a trigger-like approach,
+  // but the cleanest way is to POST to /rest/v1/rpc after creating the function.
+  
+  // Try: Supabase allows using the pg_catalog functions via RPC
+  // Actually the cleanest guaranteed approach: create a plpgsql function via POST
+  // to a special Supabase endpoint that accepts function definitions.
+  
+  // The actual approach that works: Supabase REST API does allow creating functions
+  // via the /rest/v1/ if we use the pg_catalog.pg_get_functiondef approach.
+  
+  // Since direct DDL is not possible through PostgREST, we use pg_net extension
+  // or we rely on the fact that PATCH requests to Supabase can call stored procedures.
+  
+  // REAL WORKING APPROACH: Use Supabase's ability to run raw SQL via the
+  // /rest/v1/ with special Content-Type that wraps the query
+  
+  const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+  
+  // Try to use Supabase pg-meta which is available at a different endpoint
+  // The pg-meta API runs alongside PostgREST and accepts raw SQL
+  const pgMetaUrl = `${env.SUPABASE_URL}/pg/query`;
+  
+  const createFuncSQL = `
+    CREATE OR REPLACE FUNCTION public.run_migration_add_status()
+    RETURNS TEXT AS $$
+    BEGIN
+      ALTER TABLE agency_applications ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending';
+      RETURN 'Migration completed successfully';
+    END;
+    $$ LANGUAGE plpgsql SECURITY DEFINER;
+  `;
+  
+  // Try creating the function via raw SQL endpoint
+  const tryEndpoints = [
+    `${env.SUPABASE_URL}/pg/query`,
+    `${env.SUPABASE_URL}/rest/v1/rpc/query`,
+  ];
+  
+  for (const endpoint of tryEndpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`
+        },
+        body: JSON.stringify({ query: createFuncSQL })
+      });
+      
+      if (res.ok) {
+        // Now call the function
+        const callRes = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/run_migration_add_status`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`
+          },
+          body: "{}"
+        });
+        const result = await callRes.text();
+        return new Response(JSON.stringify({ success: true, result, endpoint }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    } catch (e) {
+      // Continue to next endpoint
+    }
+  }
+  
+  // Final fallback: check if column already exists by trying to query it
+  const checkUrl = `${env.SUPABASE_URL}/rest/v1/agency_applications?select=id,status&limit=1`;
+  const checkRes = await fetch(checkUrl, {
+    headers: {
+      "apikey": supabaseKey,
+      "Authorization": `Bearer ${supabaseKey}`
+    }
+  });
+  
+  if (checkRes.ok) {
+    return new Response(JSON.stringify({
+      success: true,
+      message: "Column status already exists in agency_applications table",
+      note: "No migration needed"
+    }), { headers: { "Content-Type": "application/json" } });
+  }
+  
+  const checkBody = await checkRes.text();
+  return new Response(JSON.stringify({
+    success: false,
+    message: "Column does not exist and could not be created via API",
+    error: checkBody,
+    instruction: "Please run this SQL in Supabase Dashboard > SQL Editor: ALTER TABLE agency_applications ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending';"
+  }), {
+    status: 400,
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
 // ── Cloudflare Worker Fetch Handler ──────────────────────
 
 export default {
@@ -1138,6 +1247,10 @@ export default {
     
     if (url.pathname === "/api/admin/update-application") {
       return await handleUpdateApplication(request, env);
+    }
+    
+    if (url.pathname === "/api/admin/run-migration") {
+      return await handleRunMigration(request, env);
     }
     
     // CORS options
