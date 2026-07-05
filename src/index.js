@@ -515,10 +515,13 @@ async function handleMessage(message, env, host) {
       console.log(`[debug] Not authorized, returning`);
       return;
     }
+    const isGroup = message.chat.type === "group" || message.chat.type === "supergroup";
     const adminKeyboard = {
       inline_keyboard: [
         [
-          { text: "🖥 Открыть веб-админку", web_app: { url: `${workerHost}/admin-panel` } }
+          isGroup
+            ? { text: "🖥 Открыть веб-админку", url: `${workerHost}/admin-panel?token=ArrivalLabSecretToken` }
+            : { text: "🖥 Открыть веб-админку", web_app: { url: `${workerHost}/admin-panel` } }
         ],
         [
           { text: "📊 Статистика", callback_data: "admin_stats" }
@@ -747,10 +750,13 @@ async function handleCallbackQuery(callback, env, host) {
   const isAdmin = String(callback.message.chat.id) === String(env.ADMIN_CHAT_ID) || String(telegramId) === "405845462";
   
   if (data === "admin_main" && isAdmin) {
+    const isGroup = callback.message.chat.type === "group" || callback.message.chat.type === "supergroup";
     const adminKeyboard = {
       inline_keyboard: [
         [
-          { text: "🖥 Открыть веб-админку", web_app: { url: `${host}/admin-panel` } }
+          isGroup
+            ? { text: "🖥 Открыть веб-админку", url: `${host}/admin-panel?token=ArrivalLabSecretToken` }
+            : { text: "🖥 Открыть веб-админку", web_app: { url: `${host}/admin-panel` } }
         ],
         [
           { text: "📊 Статистика", callback_data: "admin_stats" }
