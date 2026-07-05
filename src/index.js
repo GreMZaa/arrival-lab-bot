@@ -369,6 +369,7 @@ async function sendTelegramRequest(env, method, payload) {
   if (!res.ok) {
     const errorText = await res.text();
     console.error(`Telegram API error on ${method}: ${res.status} ${errorText}`);
+    return { ok: false, error: errorText };
   }
   return await res.json();
 }
