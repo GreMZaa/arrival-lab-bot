@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS agency_applications (
     full_name     TEXT NOT NULL,
     birth_date    DATE,
     about         TEXT,
-    submitted_at  TIMESTAMPTZ DEFAULT now()
+    submitted_at  TIMESTAMPTZ DEFAULT now(),
+    status        TEXT NOT NULL DEFAULT 'pending'
 );
 
 -- Индексы для быстрого поиска

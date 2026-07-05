@@ -315,7 +315,8 @@ async function saveApplication(env, telegramId, fullName, birthDate, about) {
     telegram_id: telegramId,
     full_name: fullName,
     birth_date: birthDate,
-    about: about
+    about: about,
+    status: "pending"
   });
 }
 
@@ -1081,6 +1082,37 @@ async function handleUpdatePurchase(request, env) {
   }
 }
 
+async function handleUpdateApplication(request, env) {
+  const url = new URL(request.url);
+  
+  const token = url.searchParams.get("token");
+  if (token !== "ArrivalLabSecretToken") {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("twa ")) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const initData = authHeader.substring(4);
+    const isValid = await validateTelegramInitData(initData, env.BOT_TOKEN);
+    if (!isValid) {
+      return new Response("Forbidden", { status: 403 });
+    }
+  }
+  
+  try {
+    const { id, status } = await request.json();
+    const data = await dbQuery(env, "agency_applications", "PATCH", { id: `eq.${id}` }, { status });
+    return new Response(JSON.stringify({ success: true, data }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*"
+      }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
+
 // ── Cloudflare Worker Fetch Handler ──────────────────────
 
 export default {
@@ -1102,6 +1134,10 @@ export default {
     
     if (url.pathname === "/api/admin/update-purchase") {
       return await handleUpdatePurchase(request, env);
+    }
+    
+    if (url.pathname === "/api/admin/update-application") {
+      return await handleUpdateApplication(request, env);
     }
     
     // CORS options
@@ -1422,6 +1458,11 @@ const ADMIN_PANEL_HTML = (env) => `
     .badge-paid {
       background: var(--success-light);
       color: var(--success);
+    }
+
+    .badge-rejected {
+      background: #FFEBEB;
+      color: #FF4D4D;
     }
     
     /* Tab View Management */
@@ -1862,21 +1903,69 @@ const ADMIN_PANEL_HTML = (env) => `
         return;
       }
       apps.forEach(a => {
+        let badgeClass = 'badge-pending';
+        let statusLabel = 'Ожидает';
+        if (a.status === 'approved') {
+          badgeClass = 'badge-paid';
+          statusLabel = 'Принято';
+        } else if (a.status === 'rejected') {
+          badgeClass = 'badge-rejected';
+          statusLabel = 'Отклонено';
+        }
+        
+        let actionButtons = '';
+        if (a.status === 'pending' || !a.status) {
+          actionButtons = \`
+            <div style="margin-top: 8px;">
+              <button class="btn-action" onclick="updateAppStatus(\${a.id}, 'approved')">Принять</button>
+              <button class="btn-action btn-secondary" onclick="updateAppStatus(\${a.id}, 'rejected')">Отклонить</button>
+            </div>
+          \`;
+        }
+        
         container.innerHTML += \`
-          <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 0;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div class="item-icon">📝</div>
-              <div>
-                <div class="item-title">\${a.full_name}</div>
-                <div class="item-sub">Рождение: \${a.birth_date} • ID: \${a.telegram_id}</div>
+          <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 0;">
+            <div style="display: flex; justify-content: space-between; width: 100%;">
+              <div class="item-left">
+                <div class="item-icon">📝</div>
+                <div class="item-details">
+                  <div class="item-title">\${a.full_name}</div>
+                  <div class="item-sub">Рождение: \${a.birth_date} • ID: \${a.telegram_id}</div>
+                </div>
+              </div>
+              <div class="item-right">
+                <span class="item-badge \${badgeClass}">\${statusLabel}</span>
               </div>
             </div>
-            <div style="font-size: 13px; color: var(--text-muted); background: #F0F2F6; padding: 10px; border-radius: 8px; width: 100%; margin-top: 6px; line-height: 1.4;">
+            <div style="font-size: 13px; color: var(--text-muted); background: #F0F2F6; padding: 10px; border-radius: 8px; width: 100%; margin-top: 6px; line-height: 1.4; box-sizing: border-box;">
               <b>О себе:</b> \${a.about}
             </div>
+            \${actionButtons}
           </div>
         \`;
       });
+    }
+
+    async function updateAppStatus(appId, status) {
+      try {
+        const header = getAuthHeader();
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const urlSuffix = token ? '?token=' + token : '';
+        
+        const res = await fetch('/api/admin/update-application' + urlSuffix, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': header
+          },
+          body: JSON.stringify({ id: appId, status })
+        });
+        if (!res.ok) throw new Error('Update failed');
+        loadData();
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     loadData();
