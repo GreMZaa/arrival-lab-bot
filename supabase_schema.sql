@@ -37,3 +37,12 @@ CREATE TABLE IF NOT EXISTS agency_applications (
 CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
 CREATE INDEX IF NOT EXISTS idx_purchases_telegram_id ON purchases(telegram_id);
 CREATE INDEX IF NOT EXISTS idx_applications_telegram_id ON agency_applications(telegram_id);
+
+-- Состояния пользователей для FSM (Cloudflare Workers)
+CREATE TABLE IF NOT EXISTS user_states (
+    telegram_id BIGINT PRIMARY KEY,
+    state       TEXT NOT NULL,
+    data        JSONB DEFAULT '{}'::jsonb,
+    updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
