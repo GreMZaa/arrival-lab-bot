@@ -220,9 +220,10 @@ async function dbQuery(env, table, method, queryParams = {}, body = null) {
     url.searchParams.set(k, v);
   }
   
+  const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
   const headers = {
-    "apikey": env.SUPABASE_ANON_KEY,
-    "Authorization": `Bearer ${env.SUPABASE_ANON_KEY}`,
+    "apikey": supabaseKey,
+    "Authorization": `Bearer ${supabaseKey}`,
     "Content-Type": "application/json",
     "Prefer": "return=representation"
   };
@@ -291,9 +292,10 @@ async function getUserState(env, telegramId) {
 }
 
 async function saveUserState(env, telegramId, state, stateData = {}) {
+  const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
   const headers = {
-    "apikey": env.SUPABASE_ANON_KEY,
-    "Authorization": `Bearer ${env.SUPABASE_ANON_KEY}`,
+    "apikey": supabaseKey,
+    "Authorization": `Bearer ${supabaseKey}`,
     "Content-Type": "application/json",
     "Prefer": "resolution=merge-duplicates,return=representation"
   };
