@@ -179,6 +179,26 @@ function confirmPurchase(programKey) {
   };
 }
 
+const adminMenuKeyboard = {
+  inline_keyboard: [
+    [
+      { text: "📊 Статистика", callback_data: "admin_stats" }
+    ],
+    [
+      { text: "📝 Последние заявки", callback_data: "admin_apps" },
+      { text: "💳 Последние заказы", callback_data: "admin_purchases" }
+    ]
+  ]
+};
+
+const ADMIN_WELCOME = `⚡️ <b>Панель администратора Arrival Lab</b>\n\nДобро пожаловать в панель управления. Выберите нужное действие на клавиатуре ниже:`;
+
+async function dbCount(env, table) {
+  const data = await dbQuery(env, table, "GET");
+  return data.length;
+}
+
+
 function parseDate(text) {
   // Split by any sequence of non-digit characters
   const parts = text.trim().split(/[^\d]+/);
@@ -481,6 +501,20 @@ async function handleMessage(message, env) {
   const username = message.from.username;
   const firstName = message.from.first_name || "";
   
+  if (text === "/admin") {
+    const isAuthorized = String(message.chat.id) === String(env.ADMIN_CHAT_ID) || String(telegramId) === "405845462";
+    if (!isAuthorized) {
+      return;
+    }
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: message.chat.id,
+      text: ADMIN_WELCOME,
+      parse_mode: "HTML",
+      reply_markup: adminMenuKeyboard
+    });
+    return;
+  }
+  
   if (text === "/start") {
     const registered = await userExists(env, telegramId);
     if (registered) {
@@ -684,6 +718,105 @@ async function handleCallbackQuery(callback, env) {
   const username = callback.from.username;
   const firstName = callback.from.first_name || "";
   const messageId = callback.message.message_id;
+  
+  const isAdmin = String(callback.message.chat.id) === String(env.ADMIN_CHAT_ID) || String(telegramId) === "405845462";
+  
+  if (data === "admin_main" && isAdmin) {
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: ADMIN_WELCOME,
+      parse_mode: "HTML",
+      reply_markup: adminMenuKeyboard
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+  
+  if (data === "admin_stats" && isAdmin) {
+    const userCount = await dbCount(env, "users");
+    const purchaseCount = await dbCount(env, "purchases");
+    const appCount = await dbCount(env, "agency_applications");
+    
+    const text = `📊 <b>Статистика Arrival Lab</b>\n\n` +
+                 `• Всего пользователей: <b>${userCount}</b>\n` +
+                 `• Оформлено заказов: <b>${purchaseCount}</b>\n` +
+                 `• Заявок в агентство: <b>${appCount}</b>`;
+                 
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: text,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [[{ text: "⬅️ Назад", callback_data: "admin_main" }]]
+      }
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+  
+  if (data === "admin_apps" && isAdmin) {
+    const apps = await dbQuery(env, "agency_applications", "GET", {
+      order: "id.desc",
+      limit: "3"
+    });
+    
+    let text = `📝 <b>Последние 3 заявки в агентство</b>\n\n`;
+    if (apps.length === 0) {
+      text += "Заявок пока нет.";
+    } else {
+      apps.forEach((app, index) => {
+        text += `${index + 1}. <b>${app.full_name}</b>\n` +
+                `• ID: <code>${app.telegram_id}</code>\n` +
+                `• Рождение: ${app.birth_date}\n` +
+                `• О себе: <i>${app.about}</i>\n\n`;
+      });
+    }
+    
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: text,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [[{ text: "⬅️ Назад", callback_data: "admin_main" }]]
+      }
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+  
+  if (data === "admin_purchases" && isAdmin) {
+    const purchases = await dbQuery(env, "purchases", "GET", {
+      order: "id.desc",
+      limit: "3"
+    });
+    
+    let text = `💳 <b>Последние 3 заказа программ</b>\n\n`;
+    if (purchases.length === 0) {
+      text += "Заказов пока нет.";
+    } else {
+      purchases.forEach((p, index) => {
+        text += `${index + 1}. Программа: <b>${p.program_name}</b>\n` +
+                `• ID: <code>${p.telegram_id}</code>\n` +
+                `• Цена: ${p.price} ₽\n` +
+                `• Статус: <b>${p.status}</b>\n\n`;
+      });
+    }
+    
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: text,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [[{ text: "⬅️ Назад", callback_data: "admin_main" }]]
+      }
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
   
   if (data === "main_menu") {
     await sendTelegramRequest(env, "editMessageText", {
