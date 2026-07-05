@@ -506,9 +506,13 @@ async function handleMessage(message, env, host) {
   const firstName = message.from.first_name || "";
   const workerHost = host || "https://arrival-lab-bot.succinct-drain.workers.dev";
   
+  console.log(`[debug] handleMessage text="${text}" chat_id=${message.chat.id} from_id=${telegramId}`);
+  
   if (text === "/admin") {
-    const isAuthorized = String(message.chat.id) === String(env.ADMIN_CHAT_ID) || String(telegramId) === "405845462";
+    const isAuthorized = String(message.chat.id) === String(env.ADMIN_CHAT_ID) || String(telegramId) === "405845462" || String(telegramId) === "405845462";
+    console.log(`[debug] isAuthorized=${isAuthorized} ADMIN_CHAT_ID=${env.ADMIN_CHAT_ID}`);
     if (!isAuthorized) {
+      console.log(`[debug] Not authorized, returning`);
       return;
     }
     const adminKeyboard = {
@@ -525,12 +529,14 @@ async function handleMessage(message, env, host) {
         ]
       ]
     };
-    await sendTelegramRequest(env, "sendMessage", {
+    console.log(`[debug] sending Telegram sendMessage request...`);
+    const resp = await sendTelegramRequest(env, "sendMessage", {
       chat_id: message.chat.id,
       text: ADMIN_WELCOME,
       parse_mode: "HTML",
       reply_markup: adminKeyboard
     });
+    console.log(`[debug] Telegram response:`, JSON.stringify(resp));
     return;
   }
   
