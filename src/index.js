@@ -1,4 +1,4 @@
-const WELCOME_TEXT = `👋 <b>Добро пожаловать в Orival Lab!</b>\n\nЯ — Oriva, цифровой консультант лаборатории цифровых моделей.\n\nЯ помогу подобрать программу именно под вашу цель.\nЭто займет меньше минуты.`;
+const WELCOME_TEXT = `👋 <b>Добро пожаловать в Oriva Lab!</b>\n\nЯ — Oriva, цифровой консультант лаборатории цифровых моделей.\n\nЯ помогу подобрать программу именно под вашу цель.\nЭто займет меньше минуты.`;
 
 const startKeyboard = {
   keyboard: [
@@ -106,7 +106,7 @@ const PROGRAMS = {
       "Техническая поддержка",
       "Помощь в запуске новых проектов",
     ],
-    result: "Пользователь становится частью агентства Orival Lab и получает долгосрочное сопровождение команды.",
+    result: "Пользователь становится частью агентства Oriva Lab и получает долгосрочное сопровождение команды.",
   },
 };
 
@@ -200,7 +200,7 @@ const adminMenuKeyboard = {
   ]
 };
 
-const ADMIN_WELCOME = `⚡️ <b>Панель администратора Orival Lab</b>\n\nДобро пожаловать в панель управления. Выберите нужное действие на клавиатуре ниже:`;
+const ADMIN_WELCOME = `⚡️ <b>Панель администратора Oriva Lab</b>\n\nДобро пожаловать в панель управления. Выберите нужное действие на клавиатуре ниже:`;
 
 async function dbCount(env, table) {
   const data = await dbQuery(env, table, "GET");
@@ -578,7 +578,7 @@ async function handleMessage(message, env, host) {
         await sendTelegramRequest(env, "sendDocument", {
           chat_id: telegramId,
           document: "https://raw.githubusercontent.com/GreMZaa/arrival-lab-bot/master/SETUP.md",
-          caption: "📖 Пошаговое руководство Orival Lab — START.md"
+          caption: "📖 Пошаговое руководство Oriva Lab — START.md"
         });
         await sendTelegramRequest(env, "sendMessage", {
           chat_id: telegramId,
@@ -715,7 +715,7 @@ async function handleMessage(message, env, host) {
         await sendTelegramRequest(env, "sendDocument", {
           chat_id: telegramId,
           document: "https://raw.githubusercontent.com/GreMZaa/arrival-lab-bot/master/SETUP.md",
-          caption: "📖 Пошаговое руководство Orival Lab — START.md"
+          caption: "📖 Пошаговое руководство Oriva Lab — START.md"
         });
         await sendTelegramRequest(env, "sendMessage", {
           chat_id: telegramId,
@@ -812,7 +812,7 @@ async function handleMessage(message, env, host) {
     });
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: telegramId,
-      text: "Расскажите немного о себе.\n\nНапример:\n • Есть ли у вас опыт стриминга?\n • Почему вы хотите работать с Orival Lab?\n • Какие цели вы ставите перед собой?\n • Есть ли у вас уже виртуальный персонаж?\n\nОтвет вводится в свободной форме."
+      text: "Расскажите немного о себе.\n\nНапример:\n • Есть ли у вас опыт стриминга?\n • Почему вы хотите работать с Oriva Lab?\n • Какие цели вы ставите перед собой?\n • Есть ли у вас уже виртуальный персонаж?\n\nОтвет вводится в свободной форме."
     });
     return;
   }
@@ -1044,7 +1044,7 @@ async function handleCallbackQuery(callback, env, host) {
     await sendTelegramRequest(env, "sendDocument", {
       chat_id: telegramId,
       document: "https://raw.githubusercontent.com/GreMZaa/arrival-lab-bot/master/SETUP.md",
-      caption: "📖 Пошаговое руководство Orival Lab — START.md"
+      caption: "📖 Пошаговое руководство Oriva Lab — START.md"
     });
     
     await sendTelegramRequest(env, "sendMessage", {
