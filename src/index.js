@@ -1,4 +1,4 @@
-const WELCOME_TEXT = `👋 <b>Добро пожаловать в Arrival Lab!</b>\n\nЯ — Ariva, цифровой консультант лаборатории цифровых моделей.\n\nЯ помогу подобрать программу именно под вашу цель.\nЭто займет меньше минуты.`;
+const WELCOME_TEXT = `👋 <b>Добро пожаловать в Orival Lab!</b>\n\nЯ — Oriva, цифровой консультант лаборатории цифровых моделей.\n\nЯ помогу подобрать программу именно под вашу цель.\nЭто займет меньше минуты.`;
 
 const startKeyboard = {
   keyboard: [
@@ -22,7 +22,7 @@ const mainMenuKeyboard = {
 const PROGRAMS = {
   start: {
     title: "🚀 START\nСамостоятельный запуск",
-    price: "14 900 ₽",
+    price: "Бесплатно",
     items: [
       "Лицензия на готового виртуального персонажа (в рамках условий программы)",
       "Полная инструкция по запуску",
@@ -37,7 +37,7 @@ const PROGRAMS = {
     result: "За несколько дней пользователь сможет самостоятельно выйти на свой первый стрим.",
   },
   platform_pro: {
-    title: "🔞 PLATFORM PRO\nРабота на специализированных платформах (18+)",
+    title: "🔞 PLATFORM PRO\nРабота на специализированных платформах (18+) (Стоимость программы)",
     price: "от 59 900 ₽",
     items: [
       "Всё необходимое для запуска виртуального стриминга",
@@ -54,7 +54,7 @@ const PROGRAMS = {
     result: "Полностью готовая система для работы на выбранных специализированных платформах с пониманием их правил и особенностей.",
   },
   launch: {
-    title: "⚙️ LAUNCH\nЗапуск под ключ",
+    title: "⚙️ LAUNCH\nЗапуск под ключ (Стоимость программы)",
     price: "49 900 ₽",
     items: [
       "Всё из START",
@@ -76,7 +76,7 @@ const PROGRAMS = {
     result: "Полностью готовая система.\nПользователю остается только выйти в эфир.",
   },
   restart: {
-    title: "🔄 RESTART\nПереход на виртуальный формат",
+    title: "🔄 RESTART\nПереход на виртуальный формат (Стоимость программы)",
     price: "39 900 ₽",
     items: [
       "Лицензия на виртуального персонажа",
@@ -92,8 +92,8 @@ const PROGRAMS = {
     result: "Переход на виртуальный формат без необходимости начинать карьеру заново.",
   },
   agency: {
-    title: "🤝 ARIVA TALENTS\nАгентская программа",
-    price: "15% от дохода",
+    title: "🤝 ORIVA TALENTS\nАгентская программа",
+    price: "15% от вашего дохода",
     extra: "Работа осуществляется только после рассмотрения заявки.",
     items: [
       "Всё из программы LAUNCH",
@@ -106,7 +106,7 @@ const PROGRAMS = {
       "Техническая поддержка",
       "Помощь в запуске новых проектов",
     ],
-    result: "Пользователь становится частью агентства Arrival Lab и получает долгосрочное сопровождение команды.",
+    result: "Пользователь становится частью агентства Orival Lab и получает долгосрочное сопровождение команды.",
   },
 };
 
@@ -126,7 +126,7 @@ const KEY_TO_NAME = {
 };
 
 const KEY_TO_PRICE = {
-  start: 14990,
+  start: 0,
   platform_pro: 59900,
   launch: 49900,
   restart: 39900
@@ -162,6 +162,14 @@ function programActions(programKey) {
       ]
     };
   }
+  if (programKey === "start") {
+    return {
+      inline_keyboard: [
+        [{ text: "📥 Скачать программу", callback_data: "download_start" }],
+        [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
+      ]
+    };
+  }
   return {
     inline_keyboard: [
       [{ text: "💳 Купить программу", callback_data: `buy_${programKey}` }],
@@ -173,7 +181,8 @@ function programActions(programKey) {
 function confirmPurchase(programKey) {
   return {
     inline_keyboard: [
-      [{ text: "💳 Перейти к оплате", callback_data: `pay_${programKey}` }],
+      [{ text: "💳 Банковская карта (СБП / QR-код)", callback_data: `pay_card_${programKey}` }],
+      [{ text: "🪙 USDT (Bybit / Криптокошелек)", callback_data: `pay_crypto_${programKey}` }],
       [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
     ]
   };
@@ -191,7 +200,7 @@ const adminMenuKeyboard = {
   ]
 };
 
-const ADMIN_WELCOME = `⚡️ <b>Панель администратора Arrival Lab</b>\n\nДобро пожаловать в панель управления. Выберите нужное действие на клавиатуре ниже:`;
+const ADMIN_WELCOME = `⚡️ <b>Панель администратора Orival Lab</b>\n\nДобро пожаловать в панель управления. Выберите нужное действие на клавиатуре ниже:`;
 
 async function dbCount(env, table) {
   const data = await dbQuery(env, table, "GET");
@@ -543,23 +552,74 @@ async function handleMessage(message, env, host) {
     return;
   }
   
-  if (text === "/start") {
+  if (text.startsWith("/start")) {
+    const parts = text.split(" ");
+    const arg = parts.length > 1 ? parts[1] : null;
+    
     const registered = await userExists(env, telegramId);
-    if (registered) {
-      await sendTelegramRequest(env, "sendMessage", {
-        chat_id: telegramId,
-        text: "🏠 <b>Главное меню</b>\n\nВыберите вариант, который лучше всего подходит именно вам.",
-        parse_mode: "HTML",
-        reply_markup: mainMenuKeyboard
-      });
-    } else {
+    if (!registered) {
+      await saveUserState(env, telegramId, "Registration:waiting_for_name", { referral_arg: arg });
       await sendTelegramRequest(env, "sendMessage", {
         chat_id: telegramId,
         text: WELCOME_TEXT,
         parse_mode: "HTML",
         reply_markup: startKeyboard
       });
+      return;
     }
+
+    if (arg) {
+      if (arg === "download_start" || arg === "buy_start") {
+        await sendTelegramRequest(env, "sendMessage", {
+          chat_id: telegramId,
+          text: "📥 <b>Скачивание программы START...</b>\n\nФайл с пошаговым руководством по установке и запуску VTuber подготавливается и будет отправлен вам прямо сейчас.",
+          parse_mode: "HTML"
+        });
+        await sendTelegramRequest(env, "sendDocument", {
+          chat_id: telegramId,
+          document: "https://raw.githubusercontent.com/GreMZaa/arrival-lab-bot/master/SETUP.md",
+          caption: "📖 Пошаговое руководство Orival Lab — START.md"
+        });
+        await sendTelegramRequest(env, "sendMessage", {
+          chat_id: telegramId,
+          text: "🏠 <b>Главное меню</b>",
+          reply_markup: mainMenuKeyboard
+        });
+        return;
+      }
+      
+      if (arg === "agency_apply") {
+        await saveUserState(env, telegramId, "Agency:waiting_for_full_name");
+        await sendTelegramRequest(env, "sendMessage", {
+          chat_id: telegramId,
+          text: "📝 <b>Анкета агентства</b>\n\nШаг 1 из 3\n\nВведите ваше ФИО:",
+          parse_mode: "HTML",
+          reply_markup: { remove_keyboard: true }
+        });
+        return;
+      }
+      
+      if (arg.startsWith("buy_")) {
+        const programKey = arg.substring(4);
+        if (PROGRAMS[programKey]) {
+          const programText = formatProgram(programKey);
+          await sendTelegramRequest(env, "sendMessage", {
+            chat_id: telegramId,
+            text: programText,
+            parse_mode: "HTML",
+            reply_markup: programActions(programKey)
+          });
+          return;
+        }
+      }
+    }
+
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: telegramId,
+      text: "🏠 <b>Главное меню</b>\n\nВыберите вариант, который лучше всего подходит именно вам.",
+      parse_mode: "HTML",
+      reply_markup: mainMenuKeyboard
+    });
     await deleteUserState(env, telegramId).catch(() => {});
     return;
   }
@@ -579,7 +639,9 @@ async function handleMessage(message, env, host) {
       await deleteUserState(env, telegramId).catch(() => {});
       return;
     }
-    await saveUserState(env, telegramId, "Registration:waiting_for_name");
+    // Keep referral_arg in state if it was set during start command
+    const existingRefArg = stateData.referral_arg || null;
+    await saveUserState(env, telegramId, "Registration:waiting_for_name", { referral_arg: existingRefArg });
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: telegramId,
       text: "Как вас зовут?",
@@ -604,7 +666,8 @@ async function handleMessage(message, env, host) {
       await sendTelegramRequest(env, "sendMessage", { chat_id: telegramId, text: "Пожалуйста, введите ваше имя." });
       return;
     }
-    await saveUserState(env, telegramId, "Registration:waiting_for_birth_date", { first_name: text });
+    const existingRefArg = stateData.referral_arg || null;
+    await saveUserState(env, telegramId, "Registration:waiting_for_birth_date", { first_name: text, referral_arg: existingRefArg });
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: telegramId,
       text: "Введите вашу дату рождения.\n\nФормат: <b>ДД.ММ.ГГГГ</b>",
@@ -625,6 +688,7 @@ async function handleMessage(message, env, host) {
     }
     
     const firstNameVal = stateData.first_name;
+    const refArg = stateData.referral_arg;
     const now = new Date().toISOString();
     
     await saveUser(env, telegramId, username, firstNameVal, parsedDate);
@@ -639,6 +703,53 @@ async function handleMessage(message, env, host) {
     ]);
     
     await notifyNewUser(env, telegramId, username, firstNameVal, parsedDate);
+    
+    // Redirect if there was a referral/deep link arg during registration
+    if (refArg) {
+      if (refArg === "download_start" || refArg === "buy_start") {
+        await sendTelegramRequest(env, "sendMessage", {
+          chat_id: telegramId,
+          text: "📥 <b>Скачивание программы START...</b>\n\nФайл с пошаговым руководством по установке и запуску VTuber подготавливается и будет отправлен вам прямо сейчас.",
+          parse_mode: "HTML"
+        });
+        await sendTelegramRequest(env, "sendDocument", {
+          chat_id: telegramId,
+          document: "https://raw.githubusercontent.com/GreMZaa/arrival-lab-bot/master/SETUP.md",
+          caption: "📖 Пошаговое руководство Orival Lab — START.md"
+        });
+        await sendTelegramRequest(env, "sendMessage", {
+          chat_id: telegramId,
+          text: "🏠 <b>Главное меню</b>",
+          reply_markup: mainMenuKeyboard
+        });
+        return;
+      }
+      
+      if (refArg === "agency_apply") {
+        await saveUserState(env, telegramId, "Agency:waiting_for_full_name");
+        await sendTelegramRequest(env, "sendMessage", {
+          chat_id: telegramId,
+          text: "📝 <b>Анкета агентства</b>\n\nШаг 1 из 3\n\nВведите ваше ФИО:",
+          parse_mode: "HTML",
+          reply_markup: { remove_keyboard: true }
+        });
+        return;
+      }
+      
+      if (refArg.startsWith("buy_")) {
+        const programKey = refArg.substring(4);
+        if (PROGRAMS[programKey]) {
+          const programText = formatProgram(programKey);
+          await sendTelegramRequest(env, "sendMessage", {
+            chat_id: telegramId,
+            text: programText,
+            parse_mode: "HTML",
+            reply_markup: programActions(programKey)
+          });
+          return;
+        }
+      }
+    }
     
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: telegramId,
@@ -701,7 +812,7 @@ async function handleMessage(message, env, host) {
     });
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: telegramId,
-      text: "Расскажите немного о себе.\n\nНапример:\n • Есть ли у вас опыт стриминга?\n • Почему вы хотите работать с Arrival Lab?\n • Какие цели вы ставите перед собой?\n • Есть ли у вас уже виртуальный персонаж?\n\nОтвет вводится в свободной форме."
+      text: "Расскажите немного о себе.\n\nНапример:\n • Есть ли у вас опыт стриминга?\n • Почему вы хотите работать с Orival Lab?\n • Какие цели вы ставите перед собой?\n • Есть ли у вас уже виртуальный персонаж?\n\nОтвет вводится в свободной форме."
     });
     return;
   }
@@ -902,8 +1013,55 @@ async function handleCallbackQuery(callback, env, host) {
     return;
   }
   
-  if (data.startsWith("pay_")) {
-    const programKey = data.substring(4);
+  if (data === "download_start") {
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: telegramId,
+      message_id: messageId,
+      text: "📥 <b>Скачивание программы START...</b>\n\nФайл с пошаговым руководством по установке и запуску VTuber подготавливается и будет отправлен вам прямо сейчас.",
+      parse_mode: "HTML"
+    });
+    
+    // Register free purchase
+    const now = new Date().toISOString();
+    try {
+      await savePurchase(env, telegramId, "START (Free)", 0);
+    } catch (e) {
+      console.error("Save purchase error:", e);
+    }
+    
+    await appendGoogleSheetRow(env, "Покупки", [
+      telegramId,
+      username || "",
+      firstName,
+      "START (Free)",
+      "Бесплатно",
+      now.replace("T", " ").substring(0, 19)
+    ]);
+    
+    await notifyNewPurchase(env, telegramId, username, firstName, "START (Free)", "Бесплатно");
+    
+    // Send file
+    await sendTelegramRequest(env, "sendDocument", {
+      chat_id: telegramId,
+      document: "https://raw.githubusercontent.com/GreMZaa/arrival-lab-bot/master/SETUP.md",
+      caption: "📖 Пошаговое руководство Orival Lab — START.md"
+    });
+    
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: telegramId,
+      text: "🏠 <b>Главное меню</b>",
+      parse_mode: "HTML",
+      reply_markup: mainMenuKeyboard
+    });
+    
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+
+  if (data.startsWith("pay_card_") || data.startsWith("pay_crypto_")) {
+    const isCrypto = data.startsWith("pay_crypto_");
+    const programKey = data.substring(isCrypto ? 11 : 9);
+    
     if (!KEY_TO_NAME[programKey]) {
       await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
       return;
@@ -913,9 +1071,10 @@ async function handleCallbackQuery(callback, env, host) {
     const priceNum = KEY_TO_PRICE[programKey];
     const priceStr = PROGRAMS[programKey].price;
     const now = new Date().toISOString();
+    const payMethod = isCrypto ? "USDT (Crypto)" : "Card / SBP";
     
     try {
-      await savePurchase(env, telegramId, programName, priceNum);
+      await savePurchase(env, telegramId, `${programName} (${payMethod})`, priceNum);
     } catch (e) {
       await sendTelegramRequest(env, "answerCallbackQuery", {
         callback_query_id: callback.id,
@@ -929,17 +1088,24 @@ async function handleCallbackQuery(callback, env, host) {
       telegramId,
       username || "",
       firstName,
-      programName,
+      `${programName} (${payMethod})`,
       priceStr,
       now.replace("T", " ").substring(0, 19)
     ]);
     
-    await notifyNewPurchase(env, telegramId, username, firstName, programName, priceStr);
+    await notifyNewPurchase(env, telegramId, username, firstName, `${programName} (${payMethod})`, priceStr);
+    
+    let instructionsText = "";
+    if (isCrypto) {
+      instructionsText = `🎉 <b>Заявка успешно создана!</b>\n\nВы выбрали оплату через <b>USDT (TRC-20)</b> для программы <b>${programName}</b>.\n\n📍 Адрес кошелька TRC-20 для перевода:\n<code>TR7NHqjuwNuZt8hDPKW6Re11A6SkgCw6SS</code>\n\n<i>После перевода, пожалуйста, отправьте скриншот транзакции в нашу службу заботы: @success_vstream для активации программы.</i>`;
+    } else {
+      instructionsText = `🎉 <b>Заявка успешно создана!</b>\n\nВы выбрали оплату через <b>Банковскую карту / СБП</b> для программы <b>${programName}</b>.\n\nДля завершения платежа и выставления счета свяжитесь с нашей службой заботы:\n🔹 Telegram: @success_vstream`;
+    }
     
     await sendTelegramRequest(env, "editMessageText", {
       chat_id: telegramId,
       message_id: messageId,
-      text: "🎉 <b>Заявка отправлена!</b>\n\nВ ближайшее время специалист Arrival Lab свяжется с вами для обсуждения деталей.",
+      text: instructionsText,
       parse_mode: "HTML"
     });
     
