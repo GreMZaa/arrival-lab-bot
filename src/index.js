@@ -1632,6 +1632,174 @@ async function handleRunMigration(request, env) {
   });
 }
 
+async function handleSendLoginCode(request, env) {
+  try {
+    const { username } = await request.json();
+    if (!username) {
+      return new Response(JSON.stringify({ error: "Не указан логин или Email" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    const cleanUsername = username.replace(/^@/, "").trim().toLowerCase();
+    const isEmail = cleanUsername.includes("@");
+    
+    const queryParams = {
+      "limit": "1"
+    };
+    if (isEmail) {
+      queryParams["first_name"] = `ilike.*${cleanUsername}*`;
+    } else {
+      queryParams["username"] = `ilike.${cleanUsername}`;
+    }
+
+    const users = await dbQuery(env, "users", "GET", queryParams);
+
+    if (users.length === 0) {
+      return new Response(JSON.stringify({ error: "Пользователь с такими данными не найден в системе. Пожалуйста, сначала запустите бота @ArrivalLabBOT и пройдите регистрацию там." }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    const user = users[0];
+    
+    if (!user.telegram_id || user.telegram_id < 0) {
+      return new Response(JSON.stringify({ error: "У этого аккаунта нет привязанного Telegram ID. Напишите в техподдержку." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    
+    const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const upsertRes = await fetch(`${env.SUPABASE_URL}/rest/v1/login_codes`, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=representation"
+      },
+      body: JSON.stringify({
+        telegram_id: user.telegram_id,
+        code: code,
+        created_at: new Date().toISOString()
+      })
+    });
+
+    if (!upsertRes.ok) {
+      const errTxt = await upsertRes.text();
+      console.error("Failed to upsert login code:", errTxt);
+      throw new Error("Не удалось сгенерировать код. Попробуйте позже.");
+    }
+
+    const botMsg = `🔑 <b>Код авторизации на сайте Oriva Lab</b>\n\nВаш проверочный код:\n<code>${code}</code>\n\nВведите его на странице входа. Время действия кода: 5 минут.`;
+    const tgRes = await sendTelegramRequest(env, "sendMessage", {
+      chat_id: user.telegram_id,
+      text: botMsg,
+      parse_mode: "HTML"
+    });
+
+    if (!tgRes.ok) {
+      return new Response(JSON.stringify({ error: "Не удалось отправить сообщение в Telegram. Убедитесь, что вы запустили нашего бота @ArrivalLabBOT и не заблокировали его." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, telegram_id: user.telegram_id }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+
+  } catch (e) {
+    console.error("handleSendLoginCode error:", e);
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
+async function handleVerifyLoginCode(request, env) {
+  try {
+    const { telegram_id, code } = await request.json();
+    if (!telegram_id || !code) {
+      return new Response(JSON.stringify({ error: "Не указан Telegram ID или код" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const resCodes = await fetch(`${env.SUPABASE_URL}/rest/v1/login_codes?telegram_id=eq.${telegram_id}&limit=1`, {
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`
+      }
+    });
+
+    if (!resCodes.ok) {
+      throw new Error("Ошибка базы данных при проверке кода");
+    }
+
+    const codes = await resCodes.json();
+    if (codes.length === 0) {
+      return new Response(JSON.stringify({ error: "Код подтверждения не найден. Попробуйте запросить его заново." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    const savedCode = codes[0];
+    
+    const codeTime = new Date(savedCode.created_at).getTime();
+    const nowTime = Date.now();
+    if (nowTime - codeTime > 5 * 60 * 1000) {
+      return new Response(JSON.stringify({ error: "Срок действия кода истек (5 минут). Запросите новый код." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    if (savedCode.code.trim() !== code.trim()) {
+      return new Response(JSON.stringify({ error: "Неверный код подтверждения. Пожалуйста, проверьте цифры." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    await fetch(`${env.SUPABASE_URL}/rest/v1/login_codes?telegram_id=eq.${telegram_id}`, {
+      method: "DELETE",
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`
+      }
+    }).catch(console.error);
+
+    const users = await dbQuery(env, "users", "GET", { "telegram_id": `eq.${telegram_id}`, "limit": "1" });
+    if (users.length === 0) {
+      return new Response(JSON.stringify({ error: "Пользователь не найден" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, user: users[0] }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+
+  } catch (e) {
+    console.error("handleVerifyLoginCode error:", e);
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
 async function handlePublicPurchase(request, env) {
   try {
     const { username, program_name, price, payment_method, full_name, birth_date, phone, email } = await request.json();
@@ -1962,6 +2130,14 @@ export default {
 
     if (url.pathname === "/api/public/paywall-webhook") {
       return await handlePaywallWebhook(request, env);
+    }
+
+    if (url.pathname === "/api/public/send-login-code") {
+      return await handleSendLoginCode(request, env);
+    }
+    
+    if (url.pathname === "/api/public/verify-login-code") {
+      return await handleVerifyLoginCode(request, env);
     }
     
     // CORS options

@@ -59,3 +59,11 @@ CREATE TABLE IF NOT EXISTS site_events (
 CREATE INDEX IF NOT EXISTS idx_site_events_session_id ON site_events(session_id);
 CREATE INDEX IF NOT EXISTS idx_site_events_event_type ON site_events(event_type);
 
+-- Временные коды для входа на сайт через Telegram
+CREATE TABLE IF NOT EXISTS login_codes (
+    telegram_id BIGINT PRIMARY KEY,
+    code        TEXT NOT NULL,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+

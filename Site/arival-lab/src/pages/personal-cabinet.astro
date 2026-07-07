@@ -15,17 +15,31 @@ import Icon from '../components/Icon.astro';
       <!-- Welcome/Login Box -->
       <div id="cabinet-login-box" class="cabinet-card glass" style="display: block;">
         <h1 class="display cabinet-title">Личный кабинет</h1>
-        <p class="cabinet-subtitle">Введите ваши контактные данные для входа в кабинет Oriva Lab</p>
+        <p class="cabinet-subtitle" id="login-subtitle">Введите ваши контактные данные для входа в кабинет Oriva Lab</p>
         
         <div class="login-form">
-          <div class="input-group">
+          <div class="input-group" id="group-identifier">
             <label for="input-identifier">Имя пользователя Telegram или Email</label>
             <input type="text" id="input-identifier" placeholder="@username или client@example.com" />
+          </div>
+
+          <div class="input-group" id="group-code" style="display: none;">
+            <label for="input-code">Код подтверждения из Telegram</label>
+            <input type="text" id="input-code" placeholder="Введите 6-значный код" maxlength="6" pattern="[0-9]*" inputmode="numeric" />
+            <p class="input-hint" style="font-size: 11px; margin-top: 5px; color: var(--color-text-soft);">
+              Мы отправили код подтверждения в наш Telegram-бот 
+              <a href="https://t.me/ArrivalLabBOT" target="_blank" style="color: var(--color-primary); font-weight: 600; text-decoration: underline;">@ArrivalLabBOT</a>. 
+              Запустите его, чтобы получить сообщение.
+            </p>
           </div>
           
           <button id="btn-cabinet-login" class="btn btn-primary login-btn">
             <span>Войти</span>
             <Icon name="arrow-right" size={16} />
+          </button>
+
+          <button id="btn-cabinet-back" class="btn btn-ghost login-btn" style="display: none; margin-top: -10px; font-size: 13px;">
+            <span>Изменить логин</span>
           </button>
           
           <p id="login-error" class="error-text" style="display: none;"></p>
@@ -88,15 +102,24 @@ import Icon from '../components/Icon.astro';
 <script is:inline>
   const SUPABASE_URL = "https://vhwexymjfnsacwxzsgsl.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZod2V4eW1qZm5zYWN3eHpzZ3NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMTgwOTAsImV4cCI6MjA5ODc5NDA5MH0.i1RbqqyZ6Y6XnrKeG53KAc64oaciE-DDi9yQ7Ms3-C4";
+  const BOT_API_URL = "https://arrival-lab-bot.vercel.app";
 
   document.addEventListener('DOMContentLoaded', () => {
     const loginBox = document.getElementById('cabinet-login-box');
     const dashboard = document.getElementById('cabinet-dashboard');
     const identifierInput = document.getElementById('input-identifier');
+    const codeInput = document.getElementById('input-code');
     const loginBtn = document.getElementById('btn-cabinet-login');
+    const backBtn = document.getElementById('btn-cabinet-back');
     const logoutBtn = document.getElementById('btn-cabinet-logout');
     const errorText = document.getElementById('login-error');
+    const loginSubtitle = document.getElementById('login-subtitle');
+    const groupIdentifier = document.getElementById('group-identifier');
+    const groupCode = document.getElementById('group-code');
     
+    let loginStep = 1;
+    let pendingTelegramId = null;
+
     // Check if URL contains tg_id for auto-login (Telegram Web App)
     const urlParams = new URLSearchParams(window.location.search);
     const tgId = urlParams.get('tg_id');
@@ -104,29 +127,68 @@ import Icon from '../components/Icon.astro';
     if (tgId) {
       autoLoginByTgId(tgId);
     } else {
-      // Check if user is already logged in (saved username in localStorage)
-      const savedUser = localStorage.getItem('oriva_cabinet_username');
-      if (savedUser) {
-        identifierInput.value = savedUser;
-        performLogin(savedUser);
+      // Check if user is already logged in (saved telegram_id in localStorage)
+      const savedTgId = localStorage.getItem('oriva_cabinet_tg_id');
+      if (savedTgId) {
+        autoLoginByTgId(savedTgId);
       }
     }
 
     loginBtn.addEventListener('click', () => {
-      const val = identifierInput.value.trim();
-      if (!val) {
-        showError('Пожалуйста, введите имя пользователя или Email');
-        return;
+      if (loginStep === 1) {
+        const val = identifierInput.value.trim();
+        if (!val) {
+          showError('Пожалуйста, введите имя пользователя или Email');
+          return;
+        }
+        sendCode(val);
+      } else if (loginStep === 2) {
+        const code = codeInput.value.trim();
+        if (!code || code.length !== 6) {
+          showError('Введите 6-значный код подтверждения');
+          return;
+        }
+        verifyCode(code);
       }
-      performLogin(val);
+    });
+
+    backBtn.addEventListener('click', () => {
+      switchStep(1);
     });
 
     logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('oriva_cabinet_tg_id');
       localStorage.removeItem('oriva_cabinet_username');
+      switchStep(1);
+      identifierInput.value = '';
+      codeInput.value = '';
       loginBox.style.display = 'block';
       dashboard.style.display = 'none';
       if (errorText) errorText.style.display = 'none';
     });
+
+    function switchStep(step) {
+      loginStep = step;
+      if (errorText) errorText.style.display = 'none';
+      
+      if (step === 1) {
+        groupIdentifier.style.display = 'block';
+        groupCode.style.display = 'none';
+        backBtn.style.display = 'none';
+        loginSubtitle.textContent = "Введите ваши контактные данные для входа в кабинет Oriva Lab";
+        loginBtn.querySelector('span').textContent = 'Войти';
+        loginBtn.disabled = false;
+      } else if (step === 2) {
+        groupIdentifier.style.display = 'none';
+        groupCode.style.display = 'block';
+        backBtn.style.display = 'block';
+        loginSubtitle.textContent = "Вам отправлен код подтверждения в Telegram";
+        loginBtn.querySelector('span').textContent = 'Подтвердить код';
+        loginBtn.disabled = false;
+        codeInput.value = '';
+        codeInput.focus();
+      }
+    }
 
     // Tab switching logic
     const tabs = document.querySelectorAll('.tab-btn');
@@ -158,7 +220,6 @@ import Icon from '../components/Icon.astro';
         
         const users = await userRes.json();
         if (users.length === 0) {
-          // If tg_id is not registered, show login normally
           return;
         }
         
@@ -168,44 +229,60 @@ import Icon from '../components/Icon.astro';
       }
     }
 
-    async function performLogin(identifier) {
+    async function sendCode(identifier) {
       try {
         if (errorText) errorText.style.display = 'none';
         loginBtn.disabled = true;
-        loginBtn.querySelector('span').textContent = 'Вход...';
+        loginBtn.querySelector('span').textContent = 'Отправка кода...';
         
-        const cleanId = identifier.replace(/^@/, '').trim().toLowerCase();
-        const headers = {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-        };
+        const res = await fetch(`${BOT_API_URL}/api/public/send-login-code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: identifier })
+        });
         
-        // Search by username or email inside name
-        let queryUrl = `${SUPABASE_URL}/rest/v1/users?username=eq.${cleanId}&limit=1`;
-        if (cleanId.includes('@')) {
-          // It's an email, let's search if first_name contains email
-          queryUrl = `${SUPABASE_URL}/rest/v1/users?first_name=ilike.*${cleanId}*&limit=1`;
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Не удалось отправить код');
         }
         
-        const userRes = await fetch(queryUrl, { headers });
-        if (!userRes.ok) throw new Error('Database connection failed');
+        pendingTelegramId = data.telegram_id;
+        switchStep(2);
+      } catch (err) {
+        showError(err.message);
+        loginBtn.disabled = false;
+        loginBtn.querySelector('span').textContent = 'Войти';
+      }
+    }
+
+    async function verifyCode(code) {
+      try {
+        if (errorText) errorText.style.display = 'none';
+        loginBtn.disabled = true;
+        loginBtn.querySelector('span').textContent = 'Проверка...';
         
-        const users = await userRes.json();
-        if (users.length === 0) {
-          showError('Пользователь с такими данными не найден. Проверьте правильность ввода или запустите регистрацию в боте.');
-          loginBtn.disabled = false;
-          loginBtn.querySelector('span').textContent = 'Войти';
-          return;
+        const res = await fetch(`${BOT_API_URL}/api/public/verify-login-code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegram_id: pendingTelegramId, code: code })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Неверный код подтверждения');
         }
         
-        const user = users[0];
-        localStorage.setItem('oriva_cabinet_username', identifier);
+        const user = data.user;
+        localStorage.setItem('oriva_cabinet_tg_id', user.telegram_id);
+        if (user.username) {
+          localStorage.setItem('oriva_cabinet_username', '@' + user.username);
+        }
         
         renderUserDashboard(user, user.telegram_id);
       } catch (err) {
-        showError('Не удалось выполнить вход: ' + err.message);
+        showError(err.message);
         loginBtn.disabled = false;
-        loginBtn.querySelector('span').textContent = 'Войти';
+        loginBtn.querySelector('span').textContent = 'Подтвердить код';
       }
     }
 
@@ -213,7 +290,6 @@ import Icon from '../components/Icon.astro';
       loginBox.style.display = 'none';
       dashboard.style.display = 'block';
       
-      // Parse FIO (FIO phone email)
       const name = user.first_name || 'Пользователь';
       document.getElementById('user-display-name').textContent = name.split('(')[0].trim();
       document.getElementById('info-tg').textContent = user.username ? '@' + user.username : 'не привязан';
