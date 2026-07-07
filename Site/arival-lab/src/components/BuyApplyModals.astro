@@ -71,23 +71,23 @@
                 <div style="display: flex; align-items: center; gap: 12px;">
                   <span style="font-size: 20px;">💳</span>
                   <div>
-                    <div style="font-size: 14px; font-weight: 600;">Банковская карта / СБП</div>
-                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Оплата по СБП или выставление счета</div>
+                    <div style="font-size: 14px; font-weight: 600;">Банковская карта (Paywall)</div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Оплата картой РФ / СНГ через сервис Paywall</div>
                   </div>
                 </div>
                 <input type="radio" name="payment_method" value="card" checked style="accent-color: #5f00f5;" onclick="selectPayMethod('card')">
               </label>
 
-              <label style="border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s;" id="label-pay-crypto">
+              <div style="border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 14px; display: flex; align-items: center; justify-content: space-between; cursor: not-allowed; opacity: 0.5;" id="label-pay-crypto">
                 <div style="display: flex; align-items: center; gap: 12px;">
                   <span style="font-size: 20px;">🪙</span>
                   <div>
-                    <div style="font-size: 14px; font-weight: 600;">USDT TRC-20</div>
-                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Оплата криптовалютой в сети Tron</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #94a3b8;">USDT TRC-20 <span style="font-size: 9px; background: rgba(255, 255, 255, 0.08); color: #94a3b8; padding: 2px 6px; border-radius: 6px; margin-left: 6px; font-weight: 700;">В РАЗРАБОТКЕ</span></div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Оплата криптовалютой в сети Tron</div>
                   </div>
                 </div>
-                <input type="radio" name="payment_method" value="usdt" style="accent-color: #5f00f5;" onclick="selectPayMethod('usdt')">
-              </label>
+                <input type="radio" name="payment_method" value="usdt" disabled style="accent-color: #5f00f5; pointer-events: none;">
+              </div>
             </div>
           </div>
         </div>
@@ -102,9 +102,9 @@
         <!-- Card Instructions -->
         <div id="instructions-card" style="display: block;">
           <div style="background: rgba(95, 0, 245, 0.05); border: 1px solid rgba(95, 0, 245, 0.1); border-radius: 16px; padding: 20px; font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
-            <p style="margin-bottom: 12px; color: white;">Для завершения платежа и выставления счета свяжитесь с нашей службой заботы в Telegram:</p>
-            <a href="https://t.me/success_vstream" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #5f00f5; color: white; padding: 10px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-              <span>💬</span> @success_vstream
+            <p style="margin-bottom: 12px; color: white;">Для завершения платежа перейдите к оплате на платформе Paywall:</p>
+            <a href="https://paywall.ru/arrivalab" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #5f00f5; color: white; padding: 10px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+              <span>💳</span> Перейти к оплате Paywall
             </a>
           </div>
         </div>
@@ -466,6 +466,9 @@
       // If free program, open SETUP.md
       if (selectedProgram === 'start') {
         window.open('https://raw.githubusercontent.com/GreMZaa/oriva-lab-bot/master/SETUP.md', '_blank');
+      } else if (selectedMethod === 'card') {
+        // Open Paywall link automatically
+        window.open('https://paywall.ru/arrivalab', '_blank');
       }
 
       document.getElementById('buy-step-2').style.display = 'none';
