@@ -9,19 +9,47 @@ import Icon from './Icon.astro';
   <div class="container hero-container">
     <div class="hero-content" data-reveal>
       <div class="eyebrow eyebrow-margin">Лаборатория виртуального стриминга</div>
-      <h1 class="display hero-headline">
+      
+      <h1 class="display hero-headline ab-variation" id="hero-headline-a" style="display: none;">
         Создайте своё цифровое <span class="gradient-text">альтер-эго</span>
       </h1>
+      <h1 class="display hero-headline ab-variation" id="hero-headline-b" style="display: none;">
+        Запустите карьеру <span class="gradient-text">VTuber</span> под ключ
+      </h1>
+
+      <script is:inline>
+        (function() {
+          let variant = localStorage.getItem('oriva_hero_variant');
+          if (!variant) {
+            variant = Math.random() < 0.5 ? 'A' : 'B';
+            localStorage.setItem('oriva_hero_variant', variant);
+          }
+          
+          const activeEl = document.getElementById('hero-headline-' + variant.toLowerCase());
+          if (activeEl) {
+            activeEl.style.display = 'block';
+          } else {
+            document.getElementById('hero-headline-a').style.display = 'block';
+          }
+
+          document.addEventListener('DOMContentLoaded', () => {
+            if (window.trackEvent) {
+              window.trackEvent('ab_variant_assigned', { variant: variant });
+            }
+          });
+        })();
+      </script>
+
       <p class="hero-lead">
         Запускаем VTuber-карьеры под ключ. Помогаем подобрать образ, настраиваем оборудование для трекинга лица и тела, выводим на специализированные площадки и берём на продюсирование.
       </p>
       <div class="hero-actions-container">
-        <a href="https://t.me/ArrivalLabBOT?start=website" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large animate-glow">
+        <a href="https://t.me/ArrivalLabBOT?start=website" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large animate-glow" onclick="if(window.trackEvent) window.trackEvent('click_cta_hero_bot');">
           <Icon name="rocket" size={20} />
           <span>Начать подбор</span>
           <Icon name="arrow-right" size={18} class="btn-arrow" />
         </a>
-        <a href="#programs" class="btn btn-ghost btn-large">
+        <a href="#programs" class="btn btn-ghost btn-large" onclick="if(window.trackEvent) window.trackEvent('click_cta_hero_programs');">
           <span>Наши программы</span>
         </a>
       </div>

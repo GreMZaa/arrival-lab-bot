@@ -234,6 +234,7 @@
   // Open Purchase Modal
   window.openPurchaseModal = function(programId) {
     selectedProgram = programId;
+    if (window.trackEvent) window.trackEvent('open_purchase_modal', { program_id: programId });
     
     let titleText = 'Купить программу';
     let subtitleText = 'Оформление заказа';
@@ -277,6 +278,7 @@
 
   // Open Agency Modal
   window.openAgencyModal = function() {
+    if (window.trackEvent) window.trackEvent('open_agency_modal');
     document.getElementById('agency-step-1').style.display = 'block';
     document.getElementById('agency-success').style.display = 'none';
 
@@ -380,6 +382,8 @@
       return;
     }
 
+    if (window.trackEvent) window.trackEvent('purchase_step_2', { program_id: selectedProgram, payment_method: selectedMethod });
+
     document.getElementById('buy-step-1').style.display = 'none';
     document.getElementById('buy-step-2').style.display = 'block';
 
@@ -450,6 +454,15 @@
 
       if (!res.ok) throw new Error('Network response not ok');
       
+      if (window.trackEvent) {
+        window.trackEvent('purchase_success', { 
+          program_id: selectedProgram, 
+          program_name: progName, 
+          price: progPrice, 
+          payment_method: selectedMethod 
+        });
+      }
+      
       // If free program, open SETUP.md
       if (selectedProgram === 'start') {
         window.open('https://raw.githubusercontent.com/GreMZaa/oriva-lab-bot/master/SETUP.md', '_blank');
@@ -518,6 +531,10 @@
       });
 
       if (!res.ok) throw new Error('Network response not ok');
+
+      if (window.trackEvent) {
+        window.trackEvent('agency_submit_success');
+      }
 
       document.getElementById('agency-step-1').style.display = 'none';
       document.getElementById('agency-success').style.display = 'block';

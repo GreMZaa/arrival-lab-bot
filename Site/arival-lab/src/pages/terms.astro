@@ -1,0 +1,188 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<Layout title="Пользовательское соглашение — Oriva Lab">
+  <Header />
+  
+  <main class="legal-main">
+    <div class="aurora-glow glow-1"></div>
+    <div class="aurora-glow glow-2"></div>
+    
+    <div class="container legal-container">
+      <a href="/" class="back-link">
+        <Icon name="arrow-right" size={16} class="back-arrow" />
+        <span>Вернуться на главную</span>
+      </a>
+
+      <article class="legal-card glass">
+        <h1 class="display legal-title">Пользовательское соглашение</h1>
+        <p class="legal-date">Последнее обновление: 7 июля 2026 г.</p>
+
+        <section class="legal-section">
+          <h2>1. Условия использования</h2>
+          <p>
+            Настоящее Пользовательское соглашение (далее — «Соглашение») регулирует отношения между цифровой лабораторией <strong>Oriva Lab</strong> (далее — «Лаборатория») и физическим лицом (далее — «Пользователь»), использующим веб-сайт и официального Telegram-бота для ознакомления, заказа программ запуска и вступления в агентство.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>2. Предмет соглашения</h2>
+          <p>
+            Лаборатория предоставляет Пользователю доступ к описанию учебных и практических программ запуска виртуальных стримеров (VTubers), а также техническую возможность подать заявку на консультацию, оплату программ или участие в агентстве Oriva Talents через интегрированные интерфейсы.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>3. Права и обязанности сторон</h2>
+          <p><strong>Пользователь обязуется:</strong></p>
+          <ul>
+            <li>Предоставлять достоверные контактные и регистрационные данные (Telegram username, ФИО, возраст);</li>
+            <li>Использовать материалы сайта и ботов исключительно в личных некоммерческих целях;</li>
+            <li>Не использовать автоматизированные скрипты для сбора информации с ресурсов Лаборатории.</li>
+          </ul>
+          <p style="margin-top: 12px;"><strong>Лаборатория обязуется:</strong></p>
+          <ul>
+            <li>Обеспечивать конфиденциальность личных данных в соответствии с Политикой конфиденциальности;</li>
+            <li>Предоставлять доступ к оплаченным материалам и консультационной поддержке согласно выбранному тарифу.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>4. Порядок оплаты и возврат средств</h2>
+          <p>
+            Оплата программ запуска производится в рублях через выставление счетов или в эквиваленте USDT на указанный криптокошелек сети TRC-20. 
+            Поскольку цифровые продукты и услуги настройки софта/персонажей начинают оказываться сразу после получения оплаты, возврат средств после начала этапа технической настройки на ПК Пользователя не производится, за исключением случаев обоюдного согласия сторон.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>5. Ограничение ответственности</h2>
+          <p>
+            Лаборатория не гарантирует моментальное прохождение модерации и верификации на сторонних стриминговых платформах, так как правила и решения принимаются администрацией данных платформ. Мы обязуемся сделать всё от нас зависящее для беспрепятственного запуска VTuber-карьеры Пользователя.
+          </p>
+        </section>
+      </article>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .legal-main {
+    padding-block-start: calc(var(--header-h) + var(--space-8));
+    padding-block-end: var(--space-10);
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    background: var(--color-bg);
+  }
+
+  .legal-container {
+    max-width: 800px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-soft);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    margin-bottom: var(--space-5);
+    transition: color var(--dur-fast);
+  }
+
+  .back-link:hover {
+    color: var(--color-primary);
+  }
+
+  .back-arrow {
+    transform: rotate(180deg);
+  }
+
+  .legal-card {
+    padding: var(--space-8) var(--space-7);
+    border-radius: 28px !important;
+    background: var(--color-surface);
+  }
+
+  .legal-title {
+    font-size: var(--fs-3xl);
+    font-weight: 800;
+    margin-bottom: var(--space-2);
+    background: var(--gradient-soft);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .legal-date {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-6);
+  }
+
+  .legal-section {
+    margin-bottom: var(--space-6);
+  }
+
+  .legal-section h2 {
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-3);
+  }
+
+  .legal-section p, .legal-section ul {
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    line-height: 1.65;
+  }
+
+  .legal-section ul {
+    padding-left: var(--space-5);
+    margin-top: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .aurora-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.2;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .glow-1 {
+    width: 400px;
+    height: 400px;
+    background: #d8b4fe;
+    top: 50px;
+    left: -100px;
+  }
+
+  .glow-2 {
+    width: 450px;
+    height: 450px;
+    background: #f9a8d4;
+    bottom: 50px;
+    right: -100px;
+  }
+
+  @media (max-width: 768px) {
+    .legal-card {
+      padding: var(--space-5) var(--space-4);
+      border-radius: 20px !important;
+    }
+    .legal-title {
+      font-size: var(--fs-2xl);
+    }
+  }
+</style>

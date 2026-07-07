@@ -27,8 +27,74 @@ const {
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:type" content="website" />
-		<meta property="og:image" content="/arrival_lab_logo.png" />
+		<meta property="og:image" content="/oriva_og_image.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
 		
+		<!-- Google Analytics (GA4) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+		<script is:inline>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+			gtag('config', 'G-XXXXXXXXXX');
+
+			// Global event tracker
+			window.trackEvent = function(eventName, eventParams = {}) {
+				if (typeof gtag === 'function') {
+					gtag('event', eventName, eventParams);
+				}
+				// Also dispatch a custom event for local funnel tracking
+				const event = new CustomEvent('site_funnel_event', { detail: { name: eventName, params: eventParams } });
+				document.dispatchEvent(event);
+				console.log(`[Funnel Event]: ${eventName}`, eventParams);
+			};
+
+			// Listen for site funnel events and log to Supabase
+			document.addEventListener('site_funnel_event', async (e) => {
+				const SUPABASE_URL = "https://vhwexymjfnsacwxzsgsl.supabase.co";
+				const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZod2V4eW1qZm5zYWN3eHpzZ3NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMTgwOTAsImV4cCI6MjA5ODc5NDA5MH0.i1RbqqyZ6Y6XnrKeG53KAc64oaciE-DDi9yQ7Ms3-C4";
+				
+				const sessionId = localStorage.getItem('oriva_session_id');
+				const variant = localStorage.getItem('oriva_hero_variant') || 'A';
+				const { name, params } = e.detail;
+
+				try {
+					await fetch(`${SUPABASE_URL}/rest/v1/site_events`, {
+						method: 'POST',
+						headers: {
+							'apikey': SUPABASE_ANON_KEY,
+							'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+							'Content-Type': 'application/json',
+							'Prefer': 'return=minimal'
+						},
+						body: JSON.stringify({
+							session_id: sessionId,
+							event_type: name,
+							details: { ...params, ab_variant: variant }
+						})
+					});
+				} catch (err) {
+					console.error('Failed to log funnel event to Supabase:', err);
+				}
+			});
+		</script>
+
+		<!-- JSON-LD Structured Data -->
+		<script type="application/ld+json" is:inline>
+			{
+				"@context": "https://schema.org",
+				"@type": "Organization",
+				"name": "Oriva Lab",
+				"url": "https://oriva-lab.ru",
+				"logo": "https://oriva-lab.ru/arrival_lab_logo.webp",
+				"description": "Профессиональный запуск виртуальных стримеров (VTubers) под ключ. Создание персонажей, настройка софта и продюсирование.",
+				"sameAs": [
+					"https://t.me/ArrivalLabBOT"
+				]
+			}
+		</script>
+
 		<!-- Google Fonts -->
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -108,6 +174,16 @@ const {
 			revealElements.forEach((el) => {
 				revealObserver.observe(el);
 			});
+
+			// Setup Session ID for funnel tracking
+			if (!localStorage.getItem('oriva_session_id')) {
+				localStorage.setItem('oriva_session_id', 'sess_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15));
+			}
+
+			// Track initial page view
+			if (window.trackEvent) {
+				window.trackEvent('page_view', { path: window.location.pathname });
+			}
 		</script>
 	</body>
 </html>

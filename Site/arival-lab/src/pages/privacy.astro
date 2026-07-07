@@ -1,0 +1,192 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<Layout title="Политика конфиденциальности — Oriva Lab">
+  <Header />
+  
+  <main class="legal-main">
+    <div class="aurora-glow glow-1"></div>
+    <div class="aurora-glow glow-2"></div>
+    
+    <div class="container legal-container">
+      <a href="/" class="back-link">
+        <Icon name="arrow-right" size={16} class="back-arrow" />
+        <span>Вернуться на главную</span>
+      </a>
+
+      <article class="legal-card glass">
+        <h1 class="display legal-title">Политика конфиденциальности</h1>
+        <p class="legal-date">Последнее обновление: 7 июля 2026 г.</p>
+
+        <section class="legal-section">
+          <h2>1. Общие положения</h2>
+          <p>
+            Настоящая политика конфиденциальности определяет порядок обработки и защиты персональной информации пользователей цифровой лаборатории <strong>Oriva Lab</strong> (далее — «Лаборатория»), которую Лаборатория может получить во время использования пользователем веб-сайта и официального Telegram-бота.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>2. Какие данные мы собираем</h2>
+          <p>Мы обрабатываем следующие данные при взаимодействии с нашими ресурсами:</p>
+          <ul>
+            <li><strong>Имя пользователя Telegram (username) и Telegram ID</strong> — для идентификации пользователя в боте и связи куратора;</li>
+            <li><strong>ФИО, дата рождения, контактный телефон и Email</strong> — предоставляемые пользователем добровольно при оформлении заказа на программы или подаче заявки в агентство;</li>
+            <li><strong>Информация о себе (опыт стриминга, цели)</strong> — в свободной форме для отбора кандидатов в агентство Oriva Talents;</li>
+            <li><strong>Технические данные сайта</strong> — сессионные файлы cookies, присвоенный анонимный идентификатор сессии, A/B-вариант экрана и события взаимодействия с интерфейсом для улучшения юзабилити.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>3. Цели обработки персональных данных</h2>
+          <p>Мы собираем и обрабатываем данные исключительно в следующих целях:</p>
+          <ul>
+            <li>Предоставление консультационных услуг и подбор оптимальной программы запуска;</li>
+            <li>Оформление заказов, прием платежей и организация обратной связи со специалистами;</li>
+            <li>Рассмотрение заявок на вступление в агентскую программу Oriva Talents;</li>
+            <li>Анализ посещаемости веб-сайта, проведение A/B-тестирования для оптимизации конверсии.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>4. Безопасность и хранение данных</h2>
+          <p>
+            Все собранные данные надежно хранятся в защищенной базе данных Supabase и шифруются при передаче. Мы не передаем ваши персональные данные третьим лицам, за исключением случаев, предусмотренных законодательством РФ. Данные хранятся до тех пор, пока это необходимо для оказания услуг или выполнения законных обязательств.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>5. Права пользователей</h2>
+          <p>
+            Вы имеете право запросить информацию о том, какие ваши данные мы храним, а также потребовать их изменения, уточнения или полного удаления из базы данных Лаборатории. Для этого свяжитесь с нашей службой заботы в Telegram: <a href="https://t.me/success_vstream" target="_blank">@success_vstream</a>.
+          </p>
+        </section>
+      </article>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .legal-main {
+    padding-block-start: calc(var(--header-h) + var(--space-8));
+    padding-block-end: var(--space-10);
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    background: var(--color-bg);
+  }
+
+  .legal-container {
+    max-width: 800px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-soft);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    margin-bottom: var(--space-5);
+    transition: color var(--dur-fast);
+  }
+
+  .back-link:hover {
+    color: var(--color-primary);
+  }
+
+  .back-arrow {
+    transform: rotate(180deg);
+  }
+
+  .legal-card {
+    padding: var(--space-8) var(--space-7);
+    border-radius: 28px !important;
+    background: var(--color-surface);
+  }
+
+  .legal-title {
+    font-size: var(--fs-3xl);
+    font-weight: 800;
+    margin-bottom: var(--space-2);
+    background: var(--gradient-soft);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .legal-date {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-6);
+  }
+
+  .legal-section {
+    margin-bottom: var(--space-6);
+  }
+
+  .legal-section h2 {
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-3);
+  }
+
+  .legal-section p, .legal-section ul {
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    line-height: 1.65;
+  }
+
+  .legal-section ul {
+    padding-left: var(--space-5);
+    margin-top: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .legal-section a {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  .aurora-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.2;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .glow-1 {
+    width: 400px;
+    height: 400px;
+    background: #d8b4fe;
+    top: 50px;
+    left: -100px;
+  }
+
+  .glow-2 {
+    width: 450px;
+    height: 450px;
+    background: #f9a8d4;
+    bottom: 50px;
+    right: -100px;
+  }
+
+  @media (max-width: 768px) {
+    .legal-card {
+      padding: var(--space-5) var(--space-4);
+      border-radius: 20px !important;
+    }
+    .legal-title {
+      font-size: var(--fs-2xl);
+    }
+  }
+</style>

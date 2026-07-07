@@ -47,3 +47,15 @@ CREATE TABLE IF NOT EXISTS user_states (
     updated_at  TIMESTAMPTZ DEFAULT now()
 );
 
+-- События воронки на сайте (конверсии, A/B-тесты)
+CREATE TABLE IF NOT EXISTS site_events (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    session_id  TEXT NOT NULL,
+    event_type  TEXT NOT NULL,
+    details     JSONB DEFAULT '{}'::jsonb,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_site_events_session_id ON site_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_site_events_event_type ON site_events(event_type);
+

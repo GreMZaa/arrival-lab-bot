@@ -27,7 +27,7 @@ import BuyApplyModals from '../components/BuyApplyModals.astro';
 		<div class="container footer-container">
 			<div class="footer-brand">
 				<a href="#" class="logo">
-					<img src="/arrival_lab_logo.png" alt="Oriva Lab" class="logo-img" width="32" height="32" />
+					<img src="/arrival_lab_logo.webp" alt="Oriva Lab" class="logo-img" width="32" height="32" loading="lazy" decoding="async" />
 					<span class="logo-text">Oriva<span class="gradient-text">Lab</span></span>
 				</a>
 				<p class="brand-desc">Цифровая лаборатория виртуального стриминга. Запускаем VTuber-карьеры под ключ.</p>
@@ -40,6 +40,14 @@ import BuyApplyModals from '../components/BuyApplyModals.astro';
 						<li><a href="#programs">Программы</a></li>
 						<li><a href="#agency">Агентство</a></li>
 						<li><a href="#faq">FAQ</a></li>
+					</ul>
+				</div>
+				
+				<div class="footer-col">
+					<h5 class="footer-title">Документы</h5>
+					<ul class="footer-links">
+						<li><a href="/privacy">Конфиденциальность</a></li>
+						<li><a href="/terms">Соглашение</a></li>
 					</ul>
 				</div>
 				
@@ -104,7 +112,7 @@ import BuyApplyModals from '../components/BuyApplyModals.astro';
 	
 	.footer-links-grid {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: repeat(3, 1fr);
 		gap: var(--space-4);
 	}
 	

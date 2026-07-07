@@ -88,6 +88,92 @@
         </div>
       </div>
 
+      <!-- A/B Testing & Conversion Funnel Dashboard -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-bottom: 36px;" id="admin-ab-funnel-section">
+        <!-- A/B Testing Control -->
+        <div class="dashboard-table-box glass" style="padding: 24px; background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: var(--radius-md) !important;">
+          <h3 style="margin-bottom: 12px; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">🧬 A/B Тестирование Hero</h3>
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 16px; line-height: 1.5;">Управление вариантами заголовка главного экрана для оптимизации конверсии.</p>
+          
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <div>
+                <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Текущий тестовый вариант:</span>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Сохранен в вашем браузере</div>
+              </div>
+              <span id="ab-current-variant-badge" style="background: #2563eb; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 800;">A</span>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+              <button id="btn-set-variant-a" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #0f172a; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                Вариант A
+              </button>
+              <button id="btn-set-variant-b" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #0f172a; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                Вариант B
+              </button>
+              <button id="btn-reset-variant" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #fca5a5; background: #fee2e2; color: #b91c1c; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                Сбросить
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversion Funnel Dashboard -->
+        <div class="dashboard-table-box glass" style="padding: 24px; background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: var(--radius-md) !important;">
+          <h3 style="margin-bottom: 12px; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">📈 Воронка конверсии сайта</h3>
+          
+          <div style="display: flex; flex-direction: column; gap: 12px;" id="funnel-container">
+            <!-- Page View -->
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span style="font-weight: 600; color: #475569;">1. Просмотры сайта (Visits)</span>
+                <span id="funnel-val-views" style="font-weight: 700; color: #0f172a;">-</span>
+              </div>
+              <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                <div id="funnel-bar-views" style="width: 100%; height: 100%; background: #94a3b8; transition: width 0.5s;"></div>
+              </div>
+            </div>
+
+            <!-- CTA Clicks -->
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span style="font-weight: 600; color: #475569;">2. Клики на кнопки (CTA Clicks)</span>
+                <span id="funnel-val-clicks" style="font-weight: 700; color: #0f172a;">-</span>
+              </div>
+              <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                <div id="funnel-bar-clicks" style="width: 0%; height: 100%; background: #60a5fa; transition: width 0.5s;"></div>
+              </div>
+            </div>
+
+            <!-- Modal Open -->
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span style="font-weight: 600; color: #475569;">3. Открытия модалок (Modal Open)</span>
+                <span id="funnel-val-modals" style="font-weight: 700; color: #0f172a;">-</span>
+              </div>
+              <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                <div id="funnel-bar-modals" style="width: 0%; height: 100%; background: #a78bfa; transition: width 0.5s;"></div>
+              </div>
+            </div>
+
+            <!-- Conversion Success -->
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span style="font-weight: 600; color: #475569;">4. Конверсия (Success)</span>
+                <span id="funnel-val-success" style="font-weight: 700; color: #0f172a;">-</span>
+              </div>
+              <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                <div id="funnel-bar-success" style="width: 0%; height: 100%; background: #34d399; transition: width 0.5s;"></div>
+              </div>
+            </div>
+            
+            <div style="font-size: 11px; color: #94a3b8; text-align: right; margin-top: 4px;" id="funnel-conversion-rate">
+              Общая конверсия: - %
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="dashboard-tables-container">
         <!-- Users Table -->
         <div class="dashboard-table-box glass">
@@ -964,9 +1050,88 @@
           });
         }
       }
+
+      // 4. Fetch Funnel site_events
+      const siteEvents = await fetchSupabase('site_events?select=*', { method: 'GET' });
+      
+      const views = siteEvents.filter(e => e.event_type === 'page_view').length;
+      const clicks = siteEvents.filter(e => e.event_type.startsWith('click_')).length;
+      const modals = siteEvents.filter(e => e.event_type.startsWith('open_')).length;
+      const success = siteEvents.filter(e => e.event_type.endsWith('_success')).length;
+
+      // Update funnel numbers
+      const fViewsVal = document.getElementById('funnel-val-views');
+      const fClicksVal = document.getElementById('funnel-val-clicks');
+      const fModalsVal = document.getElementById('funnel-val-modals');
+      const fSuccessVal = document.getElementById('funnel-val-success');
+
+      if (fViewsVal) fViewsVal.innerText = views.toString();
+      if (fClicksVal) fClicksVal.innerText = clicks.toString();
+      if (fModalsVal) fModalsVal.innerText = modals.toString();
+      if (fSuccessVal) fSuccessVal.innerText = success.toString();
+
+      // Update bars width
+      const pctClicks = views > 0 ? Math.round((clicks / views) * 100) : 0;
+      const pctModals = views > 0 ? Math.round((modals / views) * 100) : 0;
+      const pctSuccess = views > 0 ? Math.round((success / views) * 100) : 0;
+
+      const fClicksBar = document.getElementById('funnel-bar-clicks');
+      const fModalsBar = document.getElementById('funnel-bar-modals');
+      const fSuccessBar = document.getElementById('funnel-bar-success');
+
+      if (fClicksBar) fClicksBar.style.width = `${Math.min(pctClicks, 100)}%`;
+      if (fModalsBar) fModalsBar.style.width = `${Math.min(pctModals, 100)}%`;
+      if (fSuccessBar) fSuccessBar.style.width = `${Math.min(pctSuccess, 100)}%`;
+
+      const fRate = document.getElementById('funnel-conversion-rate');
+      if (fRate) {
+        const rate = views > 0 ? ((success / views) * 100).toFixed(1) : '0.0';
+        fRate.innerHTML = `Общая конверсия: <strong>${rate}%</strong> (на основе просмотров)`;
+      }
+
+      // Sync A/B variant badge
+      syncABVariantBadge();
     } catch (e) {
       console.error('Error loading dashboard data', e);
     }
+  }
+
+  // A/B Testing control helpers
+  const syncABVariantBadge = () => {
+    const variant = localStorage.getItem('oriva_hero_variant') || 'A';
+    const badge = document.getElementById('ab-current-variant-badge');
+    if (badge) badge.innerText = variant;
+  };
+
+  const btnSetA = document.getElementById('btn-set-variant-a');
+  const btnSetB = document.getElementById('btn-set-variant-b');
+  const btnResetV = document.getElementById('btn-reset-variant');
+
+  if (btnSetA) {
+    btnSetA.addEventListener('click', () => {
+      localStorage.setItem('oriva_hero_variant', 'A');
+      syncABVariantBadge();
+      alert('Вариант A установлен! Страница будет перезагружена.');
+      window.location.reload();
+    });
+  }
+
+  if (btnSetB) {
+    btnSetB.addEventListener('click', () => {
+      localStorage.setItem('oriva_hero_variant', 'B');
+      syncABVariantBadge();
+      alert('Вариант B установлен! Страница будет перезагружена.');
+      window.location.reload();
+    });
+  }
+
+  if (btnResetV) {
+    btnResetV.addEventListener('click', () => {
+      localStorage.removeItem('oriva_hero_variant');
+      syncABVariantBadge();
+      alert('Тестовый заголовок сброшен! Будет выбран случайный вариант при перезагрузке.');
+      window.location.reload();
+    });
   }
 
   // Init
@@ -975,4 +1140,5 @@
     showAdminBar();
   }
   applyStoredContent();
+  syncABVariantBadge();
 </script>
