@@ -1,0 +1,247 @@
+---
+import Icon from './Icon.astro';
+---
+<header class="header">
+  <div class="container header-container">
+    <a href="#" class="logo">
+      <img src="/arrival_lab_logo.png" alt="Oriva Lab" class="logo-img" width="38" height="38" />
+      <span class="logo-text">Oriva<span class="gradient-text">Lab</span></span>
+    </a>
+
+    <nav class="nav-links" aria-label="Основная навигация">
+      <a href="#programs" class="nav-link">Программы</a>
+      <a href="#agency" class="nav-link">Агентство</a>
+      <a href="#faq" class="nav-link">FAQ</a>
+    </nav>
+
+    <div class="header-actions">
+      <a href="https://t.me/ArrivalLabBOT" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm-header">
+        <Icon name="bot" size={18} />
+        <span>Чат с Oriva</span>
+      </a>
+      <button class="menu-toggle" aria-label="Открыть меню" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-menu" id="mobile-menu">
+    <nav class="mobile-nav-links" aria-label="Мобильная навигация">
+      <a href="#programs" class="mobile-link">Программы</a>
+      <a href="#agency" class="mobile-link">Агентство</a>
+      <a href="#faq" class="mobile-link">FAQ</a>
+      <a href="https://t.me/ArrivalLabBOT" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+        <Icon name="bot" size={18} />
+        <span>Начать подбор в Telegram</span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-h);
+    z-index: 1000;
+    background: rgba(253, 250, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--color-border);
+    transition: background var(--dur-fast), border-color var(--dur-fast);
+  }
+
+  :global(.dark) .header {
+    background: rgba(20, 16, 31, 0.65);
+  }
+
+  .header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .logo-img {
+    height: 38px;
+    width: auto;
+    border-radius: 50%;
+  }
+
+  .logo-text {
+    letter-spacing: -0.02em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: var(--space-6);
+  }
+
+  .nav-link {
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--color-text-soft);
+    position: relative;
+    padding-block: var(--space-1);
+    transition: color var(--dur-fast);
+  }
+
+  .nav-link:hover {
+    color: var(--color-primary);
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--gradient-soft);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform var(--dur-base) var(--ease-out-soft);
+  }
+
+  .nav-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .btn-sm-header {
+    padding: 0.55rem 1.2rem;
+    font-size: var(--fs-sm);
+  }
+
+  .menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 1010;
+    padding: 0;
+  }
+
+  .menu-toggle span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--color-text);
+    transition: transform var(--dur-base), opacity var(--dur-base);
+    border-radius: var(--radius-full);
+  }
+
+  .mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: var(--color-bg);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-100%);
+    transition: transform var(--dur-slow) var(--ease-out-soft);
+  }
+
+  .mobile-menu.is-active {
+    transform: translateY(0);
+  }
+
+  .mobile-nav-links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .mobile-link {
+    font-family: var(--font-display);
+    font-size: var(--fs-2xl);
+    font-weight: 600;
+    color: var(--color-text);
+    transition: color var(--dur-fast);
+  }
+
+  .mobile-link:hover {
+    color: var(--color-primary);
+  }
+
+  @media (max-width: 768px) {
+    .nav-links {
+      display: none;
+    }
+
+    .btn-sm-header {
+      display: none;
+    }
+
+    .menu-toggle {
+      display: flex;
+    }
+
+    .menu-toggle.is-active span:nth-child(1) {
+      transform: translateY(8px) rotate(45deg);
+    }
+    .menu-toggle.is-active span:nth-child(2) {
+      opacity: 0;
+    }
+    .menu-toggle.is-active span:nth-child(3) {
+      transform: translateY(-8px) rotate(-45deg);
+    }
+  }
+</style>
+
+<script>
+  const menuToggle = document.querySelector('.menu-toggle');
+  const mobileMenu = document.querySelector('.mobile-menu');
+  const mobileLinks = document.querySelectorAll('.mobile-link');
+
+  if (menuToggle && mobileMenu) {
+    const toggleMenu = () => {
+      const isOpen = mobileMenu.classList.toggle('is-active');
+      menuToggle.classList.toggle('is-active');
+      menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      menuToggle.setAttribute('aria-label', isOpen ? 'Закрыть меню' : 'Открыть меню');
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    };
+
+    menuToggle.addEventListener('click', toggleMenu);
+
+    mobileLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        menuToggle.classList.remove('is-active');
+        mobileMenu.classList.remove('is-active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.setAttribute('aria-label', 'Открыть меню');
+        document.body.style.overflow = '';
+      });
+    });
+  }
+</script>

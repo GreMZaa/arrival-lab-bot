@@ -1,0 +1,127 @@
+---
+import Icon from './Icon.astro';
+---
+<section class="section agency-section" id="agency">
+  <div class="container agency-container">
+    <div class="agency-content" data-reveal>
+      <span class="eyebrow">Oriva Talents</span>
+      <h2 class="display agency-title">Партнёрская программа агентства</h2>
+      <p class="agency-desc">
+        Мы не просто настраиваем программы. Мы становимся вашим надёжным партнёром: берём на себя продюсирование, обновление персонажа, составление тем эфиров и юридическое оформление. Наша цель — вывести вас на стабильный доход.
+      </p>
+
+      <div class="agency-benefits">
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <Icon name="trending-up" size={22} />
+          </div>
+          <div class="benefit-details">
+            <h4 class="benefit-title">Аналитика и стратегия</h4>
+            <p class="benefit-text">Разбираем каждый эфир, анализируем удержание аудитории и пишем план развития.</p>
+          </div>
+        </div>
+
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <Icon name="palette" size={22} />
+          </div>
+          <div class="benefit-details">
+            <h4 class="benefit-title">Регулярный редизайн</h4>
+            <p class="benefit-text">Бесплатно обновляем вашего персонажа, добавляем новые эмоции и одежду по ходу роста.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="agency-cta">
+        <a href="https://t.me/ArrivalLabBOT?start=agency_apply" class="btn btn-primary btn-large">
+          <Icon name="file-text" size={20} />
+          <span>Подать заявку</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .agency-section {
+    padding-block: var(--space-10);
+    z-index: 10;
+    background: var(--color-bg-alt);
+  }
+
+  .agency-container {
+    max-width: var(--container-narrow);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .agency-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .agency-title {
+    font-size: var(--fs-3xl);
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .agency-desc {
+    color: var(--color-text-soft);
+    font-size: var(--fs-base);
+    line-height: 1.6;
+    margin-bottom: var(--space-6);
+    max-width: 640px;
+  }
+
+  .agency-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    width: 100%;
+    max-width: 520px;
+    text-align: left;
+  }
+
+  .benefit-item {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  .benefit-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary);
+    background: rgba(37, 99, 235, 0.08);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+
+  .benefit-title {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-1);
+  }
+
+  .benefit-text {
+    font-size: var(--fs-xs);
+    color: var(--color-text-soft);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 768px) {
+    .agency-title {
+      font-size: var(--fs-2xl);
+    }
+  }
+</style>

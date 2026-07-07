@@ -1,0 +1,130 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const { 
+	title = "Oriva Lab — Лаборатория виртуальных аватаров и VTuber-моделей", 
+	description = "Профессиональный запуск виртуальных стримеров (VTubers) под ключ. Подбор платформ, создание персонажей, техническая настройка и продюсирование в агентстве Oriva Talents." 
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		
+		<!-- SEO Meta Tags -->
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:type" content="website" />
+		<meta property="og:image" content="/arrival_lab_logo.png" />
+		
+		<!-- Google Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<!-- Glow Cursor Background Follower -->
+		<div class="glow-cursor" id="glow-cursor"></div>
+
+		<slot />
+		
+		<!-- Glow Cursor Follower Script -->
+		<script>
+			const glowCursor = document.getElementById('glow-cursor');
+			
+			if (glowCursor) {
+				let mouseX = window.innerWidth / 2;
+				let mouseY = window.innerHeight / 2;
+				let glowX = mouseX;
+				let glowY = mouseY;
+				let isMoving = false;
+				
+				window.addEventListener('mousemove', (e) => {
+					mouseX = e.clientX;
+					mouseY = e.clientY;
+					if (!isMoving) {
+						glowCursor.style.opacity = '1';
+						isMoving = true;
+					}
+				});
+
+				document.addEventListener('mouseleave', () => {
+					glowCursor.style.opacity = '0';
+					isMoving = false;
+				});
+
+				document.addEventListener('mouseenter', () => {
+					glowCursor.style.opacity = '1';
+					isMoving = true;
+				});
+				
+				// Smooth lerp loop
+				const updateGlow = () => {
+					const dx = mouseX - glowX;
+					const dy = mouseY - glowY;
+					
+					glowX += dx * 0.06; // Inertia factor
+					glowY += dy * 0.06;
+					
+					glowCursor.style.left = `${glowX}px`;
+					glowCursor.style.top = `${glowY}px`;
+					
+					requestAnimationFrame(updateGlow);
+				};
+				
+				updateGlow();
+			}
+		</script>
+
+		<!-- Reveal on Scroll Script -->
+		<script>
+			const revealElements = document.querySelectorAll('[data-reveal]');
+			
+			const revealObserver = new IntersectionObserver((entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						entry.target.classList.add('is-visible');
+						// Stop observing once visible
+						revealObserver.unobserve(entry.target);
+					}
+				});
+			}, {
+				threshold: 0.1,
+				rootMargin: '0px 0px -50px 0px'
+			});
+			
+			revealElements.forEach((el) => {
+				revealObserver.observe(el);
+			});
+		</script>
+	</body>
+</html>
+
+<style is:global>
+	.glow-cursor {
+		width: 600px;
+		height: 600px;
+		background: radial-gradient(circle, rgba(124, 58, 237, 0.12) 0%, rgba(99, 102, 241, 0.04) 50%, transparent 100%);
+		border-radius: 50%;
+		position: fixed;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
+		z-index: 1;
+		transition: opacity 0.6s ease;
+		opacity: 0;
+		filter: blur(20px);
+		will-change: left, top;
+	}
+</style>

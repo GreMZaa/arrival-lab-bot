@@ -25,3 +25,12 @@ Thumbs.db
 # Supabase temp
 supabase/.temp/
 
+
+.vercel
+.env*
+
+# Node
+node_modules/
+
+# Logs
+firebase-debug.log

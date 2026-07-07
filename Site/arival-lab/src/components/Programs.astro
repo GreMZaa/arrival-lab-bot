@@ -1,0 +1,261 @@
+---
+import { getProgramsInDisplayOrder } from '../data/programs';
+import Icon from './Icon.astro';
+
+const programsList = getProgramsInDisplayOrder();
+---
+
+<section class="section programs-section" id="programs">
+  <div class="container">
+    <div class="section-header" data-reveal>
+      <span class="eyebrow">Программы запуска</span>
+      <h2 class="display section-title">Выберите подходящий формат</h2>
+      <p class="section-subtitle">
+        Мы подготовили решения как для тех, кто хочет запуститься самостоятельно, так и для тех, кому нужно сопровождение и продвижение.
+      </p>
+    </div>
+
+    <div class="programs-grid">
+      {programsList.map((p, idx) => (
+        <div class={`program-card glass ${p.popular ? 'featured' : ''}`} data-reveal style={`--reveal-delay: ${idx * 80}ms;`}>
+          {p.badge && <span class={`program-badge ${p.badgeClass}`}>{p.badge}</span>}
+
+          <div class="program-header">
+            <h3 class="program-title">
+              <Icon name={p.icon} size={22} class="program-icon" ariaHidden={true} />
+              <span>{p.title}</span>
+            </h3>
+            <p class="program-subtitle">{p.subtitle}</p>
+            <div class="price-container">
+              <span class="price-value">{p.price}</span>
+            </div>
+            <p class="program-desc">{p.description}</p>
+          </div>
+
+          <div class="action-container">
+            <a href={p.ctaHref} class={`btn btn-full ${p.popular ? 'btn-primary btn-glowing' : 'btn-ghost'}`}>
+              {p.id === 'start' && <Icon name="download" size={16} />}
+              {p.id === 'talents' && <Icon name="file-text" size={16} />}
+              {p.cta}
+            </a>
+          </div>
+
+          <div class="features-wrapper">
+            <div class="features-header-text">{p.featuresHeader}</div>
+            <ul class="program-features">
+              {p.features.map((f) => (
+                <li>
+                  <span class="bullet-dot"></span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .programs-section {
+    background: var(--color-bg-alt);
+    z-index: 10;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 680px;
+    margin-inline: auto;
+    margin-bottom: var(--space-8);
+  }
+
+  .section-title {
+    font-size: var(--fs-3xl);
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .section-subtitle {
+    color: var(--color-text-soft);
+    line-height: 1.6;
+  }
+
+  .programs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  @media (max-width: 1024px) {
+    .programs-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .programs-grid {
+      grid-template-columns: 1fr;
+    }
+    .section-title {
+      font-size: var(--fs-2xl);
+    }
+  }
+
+  .program-card {
+    display: flex;
+    flex-direction: column;
+    padding: 32px 28px;
+    border-radius: 24px !important;
+    position: relative;
+    background: var(--color-surface);
+    height: 100%;
+    transition: transform var(--dur-base) var(--ease-out-soft), box-shadow var(--dur-base) var(--ease-out-soft), border-color var(--dur-base);
+  }
+
+  .program-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-soft);
+  }
+
+  .program-card.featured {
+    background: var(--color-surface-solid);
+    border: 2px solid var(--color-primary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .program-card.featured:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .program-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+  }
+
+  .badge-popular { background: rgba(95, 0, 245, 0.08); color: #5f00f5; }
+  .badge-team { background: #fee2e2; color: #ef4444; }
+  .badge-streamer { background: rgba(6, 182, 212, 0.08); color: #06b6d4; }
+  .badge-special { background: #fef3c7; color: #d97706; }
+  .badge-agency { background: rgba(236, 72, 153, 0.08); color: #ec4899; }
+
+  .program-header {
+    margin-bottom: 24px;
+  }
+
+  .program-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    font-weight: 800;
+    margin-bottom: 4px;
+    color: var(--color-text);
+  }
+
+  .program-title :global(.program-icon) {
+    color: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  .program-subtitle {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+
+  .price-container {
+    margin-bottom: 12px;
+  }
+
+  .price-value {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--color-primary);
+  }
+
+  .program-desc {
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    line-height: 1.5;
+    min-height: 48px;
+  }
+
+  .action-container {
+    margin-bottom: 28px;
+  }
+
+  .btn-full {
+    width: 100%;
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+
+  .btn-glowing {
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.35);
+  }
+  .btn-glowing:hover {
+    box-shadow: 0 0 28px rgba(37, 99, 235, 0.55);
+  }
+
+  .features-wrapper {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding-top: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.dark) .features-wrapper {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .features-header-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .program-features {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .program-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    line-height: 1.4;
+  }
+
+  .bullet-dot {
+    width: 6px;
+    height: 6px;
+    background-color: var(--color-text-muted);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 7px;
+    opacity: 0.6;
+  }
+</style>

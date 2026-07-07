@@ -16,7 +16,8 @@ const mainMenuKeyboard = {
     [{ text: "🎥 Уже стримлю и хочу перейти в виртуальный формат" }],
     [{ text: "🤝 Хочу работать с вашим агентством" }]
   ],
-  resize_keyboard: true
+  resize_keyboard: true,
+  one_time_keyboard: true
 };
 
 const PROGRAMS = {
@@ -179,10 +180,10 @@ function programActions(programKey) {
 }
 
 function confirmPurchase(programKey) {
+  const PAYWALL_URL = "https://paywall.ru/arrivalab";
   return {
     inline_keyboard: [
-      [{ text: "💳 Банковская карта (СБП / QR-код)", callback_data: `pay_card_${programKey}` }],
-      [{ text: "🪙 USDT (Bybit / Криптокошелек)", callback_data: `pay_crypto_${programKey}` }],
+      [{ text: "💳 Оплатить программу", url: PAYWALL_URL }],
       [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
     ]
   };
@@ -272,7 +273,9 @@ async function dbQuery(env, table, method, queryParams = {}, body = null) {
   
   const options = {
     method: method,
-    headers: headers
+    headers: headers,
+    // Prevent Cloudflare Workers from caching Supabase responses
+    cf: { cacheEverything: false, cacheTtl: 0 }
   };
   if (body) {
     options.body = JSON.stringify(body);
@@ -529,7 +532,7 @@ async function handleMessage(message, env, host) {
       inline_keyboard: [
         [
           isGroup
-            ? { text: "🖥 Открыть веб-админку", url: `${workerHost}/admin-panel?token=ArrivalLabSecretToken` }
+            ? { text: "🖥 Открыть веб-админку", url: `${workerHost}/admin-panel?token=OrivaLabSecretToken` }
             : { text: "🖥 Открыть веб-админку", web_app: { url: `${workerHost}/admin-panel` } }
         ],
         [
@@ -561,9 +564,8 @@ async function handleMessage(message, env, host) {
       await saveUserState(env, telegramId, "Registration:waiting_for_name", { referral_arg: arg });
       await sendTelegramRequest(env, "sendMessage", {
         chat_id: telegramId,
-        text: WELCOME_TEXT,
-        parse_mode: "HTML",
-        reply_markup: startKeyboard
+        text: "Как вас зовут?",
+        reply_markup: { remove_keyboard: true }
       });
       return;
     }
@@ -577,7 +579,7 @@ async function handleMessage(message, env, host) {
         });
         await sendTelegramRequest(env, "sendDocument", {
           chat_id: telegramId,
-          document: "https://raw.githubusercontent.com/GreMZaa/arrival-lab-bot/master/SETUP.md",
+          document: "https://raw.githubusercontent.com/GreMZaa/oriva-lab-bot/master/SETUP.md",
           caption: "📖 Пошаговое руководство Oriva Lab — START.md"
         });
         await sendTelegramRequest(env, "sendMessage", {
@@ -589,10 +591,24 @@ async function handleMessage(message, env, host) {
       }
       
       if (arg === "agency_apply") {
-        await saveUserState(env, telegramId, "Agency:waiting_for_full_name");
+        // Check if already submitted an application
+        const existingApps = await dbQuery(env, "agency_applications", "GET", { "telegram_id": `eq.${telegramId}`, "limit": "1" });
+        if (existingApps.length > 0) {
+          const app = existingApps[0];
+          const statusEmoji = app.status === 'approved' ? '✅' : app.status === 'rejected' ? '❌' : '🟡';
+          const statusLabel = app.status === 'approved' ? 'Принята' : app.status === 'rejected' ? 'Отклонена' : 'На рассмотрении';
+          await sendTelegramRequest(env, "sendMessage", {
+            chat_id: telegramId,
+            text: `📁 <b>Ваша заявка</b>\n\nСтатус: ${statusEmoji} <b>${statusLabel}</b>\n\nМы свяжемся с вами в ближайшее время.`,
+            parse_mode: "HTML",
+            reply_markup: { inline_keyboard: [[{ text: "🏠 Главное меню", callback_data: "main_menu" }]] }
+          });
+          return;
+        }
+        await saveUserState(env, telegramId, "Agency:waiting_for_about");
         await sendTelegramRequest(env, "sendMessage", {
           chat_id: telegramId,
-          text: "📝 <b>Анкета агентства</b>\n\nШаг 1 из 3\n\nВведите ваше ФИО:",
+          text: "📝 <b>Анкета агентства</b>\n\nРасскажите немного о себе.\n\nНапример:\n • Есть ли у вас опыт стриминга?\n • Почему вы хотите работать с Oriva Lab?\n • Какие цели вы ставите перед собой?\n • Есть ли у вас уже виртуальный персонаж?\n\nОтвет вводится в свободной форме.",
           parse_mode: "HTML",
           reply_markup: { remove_keyboard: true }
         });
@@ -639,7 +655,6 @@ async function handleMessage(message, env, host) {
       await deleteUserState(env, telegramId).catch(() => {});
       return;
     }
-    // Keep referral_arg in state if it was set during start command
     const existingRefArg = stateData.referral_arg || null;
     await saveUserState(env, telegramId, "Registration:waiting_for_name", { referral_arg: existingRefArg });
     await sendTelegramRequest(env, "sendMessage", {
@@ -654,9 +669,9 @@ async function handleMessage(message, env, host) {
   if (!registered && !state) {
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: telegramId,
-      text: `⚠️ <b>Для продолжения работы вам необходимо пройти регистрацию!</b>\n\n${WELCOME_TEXT}`,
+      text: "⚠️ <b>Для продолжения пройдите регистрацию.</b>\n\nОтправьте /start чтобы начать.",
       parse_mode: "HTML",
-      reply_markup: startKeyboard
+      reply_markup: { remove_keyboard: true }
     });
     return;
   }
@@ -714,7 +729,7 @@ async function handleMessage(message, env, host) {
         });
         await sendTelegramRequest(env, "sendDocument", {
           chat_id: telegramId,
-          document: "https://raw.githubusercontent.com/GreMZaa/arrival-lab-bot/master/SETUP.md",
+          document: "https://raw.githubusercontent.com/GreMZaa/oriva-lab-bot/master/SETUP.md",
           caption: "📖 Пошаговое руководство Oriva Lab — START.md"
         });
         await sendTelegramRequest(env, "sendMessage", {
@@ -726,10 +741,23 @@ async function handleMessage(message, env, host) {
       }
       
       if (refArg === "agency_apply") {
-        await saveUserState(env, telegramId, "Agency:waiting_for_full_name");
+        const existingApps = await dbQuery(env, "agency_applications", "GET", { "telegram_id": `eq.${telegramId}`, "limit": "1" });
+        if (existingApps.length > 0) {
+          const app = existingApps[0];
+          const statusEmoji = app.status === 'approved' ? '✅' : app.status === 'rejected' ? '❌' : '🟡';
+          const statusLabel = app.status === 'approved' ? 'Принята' : app.status === 'rejected' ? 'Отклонена' : 'На рассмотрении';
+          await sendTelegramRequest(env, "sendMessage", {
+            chat_id: telegramId,
+            text: `📁 <b>Ваша заявка</b>\n\nСтатус: ${statusEmoji} <b>${statusLabel}</b>\n\nМы свяжемся с вами в ближайшее время.`,
+            parse_mode: "HTML",
+            reply_markup: { inline_keyboard: [[{ text: "🏠 Главное меню", callback_data: "main_menu" }]] }
+          });
+          return;
+        }
+        await saveUserState(env, telegramId, "Agency:waiting_for_about");
         await sendTelegramRequest(env, "sendMessage", {
           chat_id: telegramId,
-          text: "📝 <b>Анкета агентства</b>\n\nШаг 1 из 3\n\nВведите ваше ФИО:",
+          text: "📝 <b>Анкета агентства</b>\n\nРасскажите немного о себе.\n\nНапример:\n • Есть ли у вас опыт стриминга?\n • Почему вы хотите работать с Oriva Lab?\n • Какие цели вы ставите перед собой?\n • Есть ли у вас уже виртуальный персонаж?\n\nОтвет вводится в свободной форме.",
           parse_mode: "HTML",
           reply_markup: { remove_keyboard: true }
         });
@@ -823,8 +851,11 @@ async function handleMessage(message, env, host) {
       return;
     }
     
-    const fullNameVal = stateData.full_name;
-    const birthDateVal = stateData.birth_date;
+    // Get user's name and birth date from their registration record
+    const users = await dbQuery(env, "users", "GET", { "telegram_id": `eq.${telegramId}` });
+    const userRecord = users.length > 0 ? users[0] : null;
+    const fullNameVal = userRecord ? userRecord.first_name : (firstName || "Неизвестно");
+    const birthDateVal = userRecord ? userRecord.birth_date : null;
     const now = new Date().toISOString();
     
     await saveApplication(env, telegramId, fullNameVal, birthDateVal, text);
@@ -834,7 +865,7 @@ async function handleMessage(message, env, host) {
       telegramId,
       username || "",
       fullNameVal,
-      birthDateVal,
+      birthDateVal || "",
       text,
       now.replace("T", " ").substring(0, 19)
     ]);
@@ -845,7 +876,12 @@ async function handleMessage(message, env, host) {
       chat_id: telegramId,
       text: "✅ <b>Спасибо!</b>\n\nВаша заявка успешно отправлена.\nМы внимательно рассмотрим её и свяжемся с вами в ближайшее время.",
       parse_mode: "HTML",
-      reply_markup: mainMenuKeyboard
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "📁 Моя заявка", callback_data: "my_application" }],
+          [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
+        ]
+      }
     });
     return;
   }
@@ -866,7 +902,7 @@ async function handleCallbackQuery(callback, env, host) {
       inline_keyboard: [
         [
           isGroup
-            ? { text: "🖥 Открыть веб-админку", url: `${host}/admin-panel?token=ArrivalLabSecretToken` }
+            ? { text: "🖥 Открыть веб-админку", url: `${host}/admin-panel?token=OrivaLabSecretToken` }
             : { text: "🖥 Открыть веб-админку", web_app: { url: `${host}/admin-panel` } }
         ],
         [
@@ -894,7 +930,7 @@ async function handleCallbackQuery(callback, env, host) {
     const purchaseCount = await dbCount(env, "purchases");
     const appCount = await dbCount(env, "agency_applications");
     
-    const text = `📊 <b>Статистика Arrival Lab</b>\n\n` +
+    const text = `📊 <b>Статистика Oriva Lab</b>\n\n` +
                  `• Всего пользователей: <b>${userCount}</b>\n` +
                  `• Оформлено заказов: <b>${purchaseCount}</b>\n` +
                  `• Заявок в агентство: <b>${appCount}</b>`;
@@ -1005,7 +1041,7 @@ async function handleCallbackQuery(callback, env, host) {
     await sendTelegramRequest(env, "editMessageText", {
       chat_id: telegramId,
       message_id: messageId,
-      text: `Вы выбрали программу:\n\n<b>${name}</b>\n💰 ${price}\n\nДля продолжения нажмите кнопку ниже.`,
+      text: `Вы выбрали программу:\n\n<b>${name}</b>\n💰 ${price}\n\nНажмите кнопку ниже, чтобы перейти к оплате. После оплаты наша команда свяжется с вами в течение 24 часов.`,
       parse_mode: "HTML",
       reply_markup: confirmPurchase(programKey)
     });
@@ -1058,9 +1094,13 @@ async function handleCallbackQuery(callback, env, host) {
     return;
   }
 
-  if (data.startsWith("pay_card_") || data.startsWith("pay_crypto_")) {
+  // Legacy pay_card_ / pay_crypto_ kept for backwards compat but no longer shown to new users
+  if (data.startsWith("pay_card_") || data.startsWith("pay_crypto_") || data.startsWith("pay_paywall_")) {
+    const PAYWALL_URL = "https://paywall.ru/arrivalab";
     const isCrypto = data.startsWith("pay_crypto_");
-    const programKey = data.substring(isCrypto ? 11 : 9);
+    const isPaywall = data.startsWith("pay_paywall_");
+    const prefix = isCrypto ? 11 : isPaywall ? 12 : 9;
+    const programKey = data.substring(prefix);
     
     if (!KEY_TO_NAME[programKey]) {
       await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
@@ -1071,7 +1111,7 @@ async function handleCallbackQuery(callback, env, host) {
     const priceNum = KEY_TO_PRICE[programKey];
     const priceStr = PROGRAMS[programKey].price;
     const now = new Date().toISOString();
-    const payMethod = isCrypto ? "USDT (Crypto)" : "Card / SBP";
+    const payMethod = isCrypto ? "USDT (Crypto)" : isPaywall ? "Paywall.ru" : "Card / SBP";
     
     try {
       await savePurchase(env, telegramId, `${programName} (${payMethod})`, priceNum);
@@ -1098,6 +1138,8 @@ async function handleCallbackQuery(callback, env, host) {
     let instructionsText = "";
     if (isCrypto) {
       instructionsText = `🎉 <b>Заявка успешно создана!</b>\n\nВы выбрали оплату через <b>USDT (TRC-20)</b> для программы <b>${programName}</b>.\n\n📍 Адрес кошелька TRC-20 для перевода:\n<code>TR7NHqjuwNuZt8hDPKW6Re11A6SkgCw6SS</code>\n\n<i>После перевода, пожалуйста, отправьте скриншот транзакции в нашу службу заботы: @success_vstream для активации программы.</i>`;
+    } else if (isPaywall) {
+      instructionsText = `✅ <b>Отлично! Заявка принята.</b>\n\nПрограмма: <b>${programName}</b>\n💰 Стоимость: <b>${priceStr}</b>\n\nПерейдите по ссылке для завершения оплаты:\n🔗 ${PAYWALL_URL}\n\n<i>После оплаты наша команда свяжется с вами в течение 24 часов.</i>`;
     } else {
       instructionsText = `🎉 <b>Заявка успешно создана!</b>\n\nВы выбрали оплату через <b>Банковскую карту / СБП</b> для программы <b>${programName}</b>.\n\nДля завершения платежа и выставления счета свяжитесь с нашей службой заботы:\n🔹 Telegram: @success_vstream`;
     }
@@ -1131,19 +1173,65 @@ async function handleCallbackQuery(callback, env, host) {
       return;
     }
     
-    await saveUserState(env, telegramId, "Agency:waiting_for_full_name");
+    // Check if already submitted an application
+    const existingApps = await dbQuery(env, "agency_applications", "GET", { "telegram_id": `eq.${telegramId}`, "limit": "1" });
+    if (existingApps.length > 0) {
+      const app = existingApps[0];
+      const statusEmoji = app.status === 'approved' ? '✅' : app.status === 'rejected' ? '❌' : '🟡';
+      const statusLabel = app.status === 'approved' ? 'Принята' : app.status === 'rejected' ? 'Отклонена' : 'На рассмотрении';
+      await sendTelegramRequest(env, "editMessageText", {
+        chat_id: telegramId,
+        message_id: messageId,
+        text: `📁 <b>Ваша заявка</b>\n\nСтатус: ${statusEmoji} <b>${statusLabel}</b>\n\nМы свяжемся с вами в ближайшее время.`,
+        parse_mode: "HTML",
+        reply_markup: { inline_keyboard: [[{ text: "🏠 Главное меню", callback_data: "main_menu" }]] }
+      });
+      await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+      return;
+    }
+    
+    await saveUserState(env, telegramId, "Agency:waiting_for_about");
     await sendTelegramRequest(env, "editMessageText", {
       chat_id: telegramId,
       message_id: messageId,
-      text: "📝 <b>Анкета агентства</b>\n\nШаг 1 из 3\n\nВведите ваше ФИО:",
+      text: "📝 <b>Анкета агентства</b>\n\nРасскажите немного о себе:",
       parse_mode: "HTML"
     });
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: telegramId,
-      text: "Введите ваше ФИО:",
+      text: "Например:\n • Есть ли у вас опыт стриминга?\n • Почему вы хотите работать с Oriva Lab?\n • Какие цели вы ставите перед собой?\n • Есть ли у вас уже виртуальный персонаж?\n\nОтвет вводится в свободной форме.",
       reply_markup: { remove_keyboard: true }
     });
     
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+
+  if (data === "my_application") {
+    const apps = await dbQuery(env, "agency_applications", "GET", { "telegram_id": `eq.${telegramId}`, "order": "id.desc", "limit": "1" });
+    if (apps.length === 0) {
+      await sendTelegramRequest(env, "answerCallbackQuery", {
+        callback_query_id: callback.id,
+        text: "Заявок не найдено.",
+        show_alert: true
+      });
+      return;
+    }
+    const app = apps[0];
+    const statusEmoji = app.status === 'approved' ? '✅' : app.status === 'rejected' ? '❌' : '🟡';
+    const statusLabel = app.status === 'approved' ? 'Принята' : app.status === 'rejected' ? 'Отклонена' : 'На рассмотрении';
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: telegramId,
+      message_id: messageId,
+      text: `📁 <b>Личный кабинет</b>\n\n<b>Заявка в агентство</b>\nСтатус: ${statusEmoji} <b>${statusLabel}</b>\n\n${app.status === 'pending' ? 'Мы рассмотрим вашу заявку. Обычно это занимает 1-3 рабочих дня.' : app.status === 'approved' ? 'Поздравляем! С вами скоро свяжется куратор команды.' : 'К сожалению, в этот раз мы не смогли принять вашу заявку.'}`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🔄 Обновить", callback_data: "my_application" }],
+          [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
+        ]
+      }
+    });
     await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
     return;
   }
@@ -1203,20 +1291,56 @@ async function validateTelegramInitData(initDataString, botToken) {
 
 // ── API Handlers ─────────────────────────────────────────
 
-async function handleAdminData(request, env) {
-  const url = new URL(request.url);
+async function checkAuth(request, env) {
+  const authHeader = request.headers.get("Authorization");
   
+  // 1. Check Bearer token (user-entered password)
+  if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+    const password = authHeader.substring(7);
+    return password === "oriva2026";
+  }
+  
+  // 2. Check legacy URL token
+  const url = new URL(request.url);
   const token = url.searchParams.get("token");
-  if (token !== "ArrivalLabSecretToken") {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("twa ")) {
-      return new Response("Unauthorized", { status: 401 });
-    }
+  if (token === "OrivaLabSecretToken") {
+    return true;
+  }
+  
+  // 3. Check Telegram WebApp initData
+  if (authHeader && authHeader.toLowerCase().startsWith("twa ")) {
     const initData = authHeader.substring(4);
     const isValid = await validateTelegramInitData(initData, env.BOT_TOKEN);
-    if (!isValid) {
-      return new Response("Forbidden", { status: 403 });
+    if (!isValid) return false;
+    
+    try {
+      const params = new URLSearchParams(initData);
+      const userJSON = params.get("user");
+      if (userJSON) {
+        const user = JSON.parse(userJSON);
+        // Only allow admin user IDs
+        if (String(user.id) === "405845462") {
+          return true;
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing initData user:", e);
     }
+  }
+  
+  return false;
+}
+
+async function handleAdminData(request, env) {
+  const isAuth = await checkAuth(request, env);
+  if (!isAuth) {
+    return new Response("Unauthorized", { 
+      status: 401,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*"
+      }
+    });
   }
   
   try {
@@ -1228,7 +1352,9 @@ async function handleAdminData(request, env) {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "*"
+        "Access-Control-Allow-Headers": "*",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Pragma": "no-cache"
       }
     });
   } catch (e) {
@@ -1237,19 +1363,15 @@ async function handleAdminData(request, env) {
 }
 
 async function handleUpdatePurchase(request, env) {
-  const url = new URL(request.url);
-  
-  const token = url.searchParams.get("token");
-  if (token !== "ArrivalLabSecretToken") {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("twa ")) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    const initData = authHeader.substring(4);
-    const isValid = await validateTelegramInitData(initData, env.BOT_TOKEN);
-    if (!isValid) {
-      return new Response("Forbidden", { status: 403 });
-    }
+  const isAuth = await checkAuth(request, env);
+  if (!isAuth) {
+    return new Response("Unauthorized", { 
+      status: 401,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*"
+      }
+    });
   }
   
   try {
@@ -1268,19 +1390,15 @@ async function handleUpdatePurchase(request, env) {
 }
 
 async function handleUpdateApplication(request, env) {
-  const url = new URL(request.url);
-  
-  const token = url.searchParams.get("token");
-  if (token !== "ArrivalLabSecretToken") {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("twa ")) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    const initData = authHeader.substring(4);
-    const isValid = await validateTelegramInitData(initData, env.BOT_TOKEN);
-    if (!isValid) {
-      return new Response("Forbidden", { status: 403 });
-    }
+  const isAuth = await checkAuth(request, env);
+  if (!isAuth) {
+    return new Response("Unauthorized", { 
+      status: 401,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*"
+      }
+    });
   }
   
   try {
@@ -1407,6 +1525,125 @@ async function handleRunMigration(request, env) {
   });
 }
 
+async function handlePublicPurchase(request, env) {
+  try {
+    const { username, program_name, price, payment_method, full_name, birth_date, phone, email } = await request.json();
+    if (!username || !program_name || !price || !full_name || !phone || !email) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+    
+    const cleanUsername = username.replace(/^@/, "").trim();
+    const formattedName = `${full_name} (${phone}, ${email})`;
+    
+    let user_id = null;
+    let telegram_id = null;
+    
+    const users = await dbQuery(env, "users", "GET", { "username": `eq.${cleanUsername}`, "limit": "1" });
+    if (users.length > 0) {
+      user_id = users[0].id;
+      telegram_id = users[0].telegram_id;
+      // Update existing user profile with latest contact info
+      await dbQuery(env, "users", "PATCH", { id: `eq.${user_id}` }, {
+        first_name: formattedName,
+        birth_date: birth_date || users[0].birth_date
+      });
+    } else {
+      telegram_id = -Math.floor(Math.random() * 1000000000) - 100000000;
+      const newUser = await saveUser(env, telegram_id, cleanUsername, formattedName, birth_date || null);
+      user_id = newUser.id;
+    }
+    
+    const purchase = await dbQuery(env, "purchases", "POST", {}, {
+      user_id: user_id,
+      telegram_id: telegram_id,
+      program_name: program_name,
+      price: price,
+      status: "pending"
+    });
+    
+    const adminMsg = `🌐 <b>Новый заказ с САЙТА</b>\n\n` +
+      `🔹 Программа: <b>${program_name}</b>\n` +
+      `🔹 Стоимость: <b>${price} ₽</b>\n` +
+      `🔹 Способ оплаты: <b>${payment_method === 'usdt' ? 'USDT (Крипта)' : 'Банковская карта'}</b>\n\n` +
+      `👤 <b>Данные клиента:</b>\n` +
+      `• ФИО: <b>${full_name}</b>\n` +
+      `• Рождение: <b>${birth_date || 'не указано'}</b>\n` +
+      `• Телефон: <b>${phone}</b>\n` +
+      `• Email: <b>${email}</b>\n` +
+      `• Telegram: @${cleanUsername}`;
+      
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: env.ADMIN_CHAT_ID,
+      text: adminMsg,
+      parse_mode: "HTML"
+    }).catch(() => {});
+    
+    return new Response(JSON.stringify({ success: true, data: purchase[0] }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
+async function handlePublicApplication(request, env) {
+  try {
+    const { username, full_name, birth_date, about } = await request.json();
+    if (!username || !full_name || !about) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+    
+    const cleanUsername = username.replace(/^@/, "").trim();
+    
+    let user_id = null;
+    let telegram_id = null;
+    
+    const users = await dbQuery(env, "users", "GET", { "username": `eq.${cleanUsername}`, "limit": "1" });
+    if (users.length > 0) {
+      user_id = users[0].id;
+      telegram_id = users[0].telegram_id;
+    } else {
+      telegram_id = -Math.floor(Math.random() * 1000000000) - 100000000;
+      const newUser = await saveUser(env, telegram_id, cleanUsername, full_name, birth_date || null);
+      user_id = newUser.id;
+    }
+    
+    const application = await dbQuery(env, "agency_applications", "POST", {}, {
+      user_id: user_id,
+      telegram_id: telegram_id,
+      full_name: full_name,
+      birth_date: birth_date || null,
+      about: about,
+      status: "pending"
+    });
+    
+    const adminMsg = `🌐 <b>Новая заявка в агентство с САЙТА</b>\n\n🔹 ФИО: <b>${full_name}</b>\n🔹 Рождение: <b>${birth_date || 'не указано'}</b>\n👤 Клиент: @${cleanUsername}\n📝 О себе: <i>${about}</i>`;
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: env.ADMIN_CHAT_ID,
+      text: adminMsg,
+      parse_mode: "HTML"
+    }).catch(() => {});
+    
+    return new Response(JSON.stringify({ success: true, data: application[0] }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
 // ── Cloudflare Worker Fetch Handler ──────────────────────
 
 export default {
@@ -1436,6 +1673,14 @@ export default {
     
     if (url.pathname === "/api/admin/run-migration") {
       return await handleRunMigration(request, env);
+    }
+    
+    if (url.pathname === "/api/public/purchase") {
+      return await handlePublicPurchase(request, env);
+    }
+    
+    if (url.pathname === "/api/public/application") {
+      return await handlePublicApplication(request, env);
     }
     
     // CORS options
@@ -1858,6 +2103,26 @@ const ADMIN_PANEL_HTML = (env) => `
 </head>
 <body>
 
+  <!-- Login Screen -->
+  <div id="login-screen" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at top right, #1e1b4b, #0f172a); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; font-family: 'Inter', sans-serif;">
+    <div style="background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 40px 32px; width: 100%; max-width: 400px; box-sizing: border-box; box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center; color: white;">
+      <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #7c3aed, #5F00F5); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; color: white; margin: 0 auto 20px auto; box-shadow: 0 8px 16px rgba(95,0,245,0.3);">OL</div>
+      <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px;">Панель управления</h2>
+      <p style="color: #94a3b8; font-size: 14px; margin-bottom: 32px;">Для продолжения введите пароль администратора</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 16px; text-align: left;">
+        <div>
+          <label for="login-password" style="font-size: 12px; font-weight: 600; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Пароль доступа</label>
+          <input type="password" id="login-password" placeholder="••••••••" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 14px 16px; box-sizing: border-box; color: white; font-size: 15px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;" onfocus="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.2)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.boxShadow='none'" onkeypress="if(event.key === 'Enter') submitLogin()">
+        </div>
+        <div id="login-error" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #f87171; font-size: 13px; padding: 12px; border-radius: 12px; display: none; align-items: center; gap: 8px;">
+          <span>⚠️</span> Неверный пароль администратора.
+        </div>
+        <button onclick="submitLogin()" style="width: 100%; background: linear-gradient(135deg, #7c3aed, #5F00F5); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; box-shadow: 0 4px 12px rgba(95,0,245,0.2); transition: transform 0.1s, opacity 0.2s;" onmouseover="this.style.opacity='0.95'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">Подтвердить вход</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Top Header -->
   <div class="header-bar">
     <div class="profile-section">
@@ -1992,12 +2257,31 @@ const ADMIN_PANEL_HTML = (env) => `
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
       if (token) return 'token ' + token;
+      
+      const savedPassword = localStorage.getItem('oriva_admin_password');
+      if (savedPassword) return 'bearer ' + savedPassword;
+      
       return 'twa ' + tg.initData;
     }
 
-    async function loadData() {
+    function showLoginScreen() {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('login-password').value = '';
+    }
+
+    function hideLoginScreen() {
+      document.getElementById('login-screen').style.display = 'none';
+    }
+
+    async function submitLogin() {
+      const pwd = document.getElementById('login-password').value;
+      if (!pwd) return;
+      
+      localStorage.setItem('oriva_admin_password', pwd);
+      
       try {
-        const header = getAuthHeader();
+        const header = 'bearer ' + pwd;
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         const urlSuffix = token ? '?token=' + token : '';
@@ -2005,6 +2289,36 @@ const ADMIN_PANEL_HTML = (env) => `
         const res = await fetch('/api/admin/data' + urlSuffix, {
           headers: { 'Authorization': header }
         });
+        
+        if (res.status === 401 || res.status === 403) {
+          document.getElementById('login-error').style.display = 'flex';
+          localStorage.removeItem('oriva_admin_password');
+          return;
+        }
+        
+        hideLoginScreen();
+        loadData();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadData() {
+      try {
+        const header = getAuthHeader();
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const cacheBuster = '_t=' + Date.now();
+        const separator = token ? '&' : '?';
+        const urlSuffix = (token ? '?token=' + token : '?') + (token ? '&' : '') + cacheBuster;
+        
+        const res = await fetch('/api/admin/data' + urlSuffix, {
+          headers: { 'Authorization': header, 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        if (res.status === 401 || res.status === 403) {
+          showLoginScreen();
+          return;
+        }
         if (!res.ok) throw new Error('Failed to load data');
         const data = await res.json();
         

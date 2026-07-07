@@ -1,0 +1,978 @@
+---
+// AdminPanel.astro
+// Premium Glassmorphic Admin Bar and Dashboard Overlay with robust Supabase integration.
+---
+
+<div id="admin-bar-root">
+  <!-- Hidden Login Modal -->
+  <div id="admin-login-modal" class="admin-modal">
+    <div class="admin-modal-content glass">
+      <h3>🔑 Панель администратора Oriva Lab</h3>
+      <p>Введите пароль для входа в панель управления</p>
+      <div class="input-group">
+        <input type="password" id="admin-password" placeholder="Пароль администратора" />
+      </div>
+      <div class="modal-actions">
+        <button id="btn-login-submit" class="btn btn-primary">Войти</button>
+        <button id="btn-login-close" class="btn btn-ghost">Отмена</button>
+      </div>
+      <p id="login-error-msg" class="error-text"></p>
+    </div>
+  </div>
+
+  <!-- Main Floating Admin Bar (Premium Glassmorphism Style) -->
+  <div id="admin-top-bar" class="admin-top-bar-hidden premium-admin-bar glass">
+    <div class="bar-left">
+      <button id="btn-admin-dashboard" class="btn-admin-nav">Администрирование</button>
+      
+      <div class="bar-sep"></div>
+      
+      <!-- Notifications / Messages Badge -->
+      <div class="badge-container" id="btn-admin-notifications">
+        <span class="bubble-icon">i</span>
+        <span class="badge-count" id="notifications-count">0</span>
+      </div>
+      
+      <div class="bar-sep"></div>
+      
+      <!-- Reset Cache Button -->
+      <button id="btn-reset-cache" class="bar-item-btn">
+        <svg class="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l.73-.73" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Сбросить кэш</span>
+      </button>
+      
+      <div class="bar-sep"></div>
+      
+      <!-- Edit Mode Toggle Switch -->
+      <div class="toggle-container">
+        <label class="switch">
+          <input type="checkbox" id="edit-mode-toggle" />
+          <span class="slider round"></span>
+        </label>
+        <span class="toggle-label" id="edit-mode-label">Режим правки выключен</span>
+      </div>
+    </div>
+
+    <div class="bar-right">
+      <div class="profile-info">
+        <div class="profile-avatar-box">👨‍💻</div>
+        <span class="profile-username">Админ</span>
+      </div>
+      <button id="btn-admin-logout" class="logout-link">Выйти</button>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard Modal Overlay (Glassmorphism Dashboard) -->
+  <div id="admin-dashboard-overlay" class="dashboard-overlay">
+    <div class="dashboard-content glass">
+      <div class="dashboard-header">
+        <h2>📊 Панель управления Oriva Lab</h2>
+        <button id="btn-close-dashboard" class="btn-close">&times;</button>
+      </div>
+
+      <div class="dashboard-stats-grid">
+        <div class="stat-card glass">
+          <div class="stat-title">Всего пользователей</div>
+          <div class="stat-value" id="stat-total-users">-</div>
+          <div class="stat-desc">Зарегистрировано в боте</div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-title">Покупок программ</div>
+          <div class="stat-value" id="stat-total-purchases">-</div>
+          <div class="stat-desc">Успешные транзакции</div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-title">Заявок в агентство</div>
+          <div class="stat-value" id="stat-total-applications">-</div>
+          <div class="stat-desc">Подано через бота</div>
+        </div>
+      </div>
+
+      <div class="dashboard-tables-container">
+        <!-- Users Table -->
+        <div class="dashboard-table-box glass">
+          <h3>👤 Последние пользователи</h3>
+          <div class="table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Telegram ID</th>
+                  <th>Имя</th>
+                  <th>Username</th>
+                  <th>Регистрация</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <tr><td colspan="4" class="loading-cell">Загрузка данных...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Applications Table -->
+        <div class="dashboard-table-box glass">
+          <h3>🤝 Заявки в агентство</h3>
+          <div class="table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ФИО</th>
+                  <th>Дата рождения</th>
+                  <th>О себе</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody id="apps-table-body">
+                <tr><td colspan="4" class="loading-cell">Загрузка данных...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lock Icon for Admin Login inside Footer -->
+<div id="footer-admin-trigger-container" style="display:none;">
+  <button id="btn-footer-admin-lock" class="footer-lock-btn" title="Вход в админ-панель">🔒</button>
+</div>
+
+<style>
+  /* ============================================================
+     PREMIUM GLASSMORPHISM TOOLBAR STYLING
+     ============================================================ */
+  #admin-bar-root {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  .admin-top-bar-hidden {
+    display: none !important;
+  }
+
+  .premium-admin-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 20px;
+    z-index: 99999;
+    box-shadow: 0 4px 30px rgba(31, 38, 135, 0.05);
+    font-size: 13px;
+  }
+
+  /* Body adjustments */
+  :global(body.admin-bar-active) {
+    padding-top: 48px !important;
+  }
+  :global(body.admin-bar-active) :global(.header) {
+    top: 48px !important;
+  }
+
+  .bar-left, .bar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .bar-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .bar-item-btn {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #1e293b;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+  }
+  .bar-item-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  .menu-trigger {
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+  }
+  .menu-trigger:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  .hamburger-icon {
+    width: 14px;
+    height: 10px;
+    border-top: 2px solid #1e293b;
+    border-bottom: 2px solid #1e293b;
+    position: relative;
+  }
+  .hamburger-icon::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #1e293b;
+  }
+
+  .bar-sep {
+    width: 1px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .btn-admin-nav {
+    background: var(--color-cta);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-admin-nav:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+  }
+
+  /* Badge styling */
+  .badge-container {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-xs);
+  }
+  .bubble-icon {
+    font-family: Georgia, serif;
+    font-style: italic;
+    background: #475569;
+    color: #fff;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+  .badge-count {
+    background: #ef4444;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+  }
+
+  .icon-refresh {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Switch Toggle styling */
+  .toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+  }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: .2s;
+    border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    border-radius: 50%;
+    transition: .2s;
+  }
+  input:checked + .slider {
+    background-color: #22c55e;
+  }
+  input:checked + .slider:before {
+    transform: translateX(14px);
+  }
+
+  .toggle-label {
+    font-weight: 500;
+    color: #334155;
+  }
+
+  /* Right elements */
+  .profile-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+  .profile-avatar-box {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .logout-link {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .logout-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+
+  /* ============================================================
+     LOGIN MODAL STYLING (Pixel-perfect contrast & readability)
+     ============================================================ */
+  .admin-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7); /* Deep overlay scrim to block background text */
+    z-index: 999999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .admin-modal-content {
+    max-width: 420px;
+    width: 100%;
+    padding: 36px 28px;
+    text-align: center;
+    background: #ffffff !important; /* Solid white background for perfect contrast */
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    color: #0f172a !important; /* Force clean dark slate text */
+  }
+  .admin-modal-content h3 {
+    margin-bottom: 8px;
+    font-weight: 800;
+    color: #0f172a !important;
+  }
+  .admin-modal-content p {
+    font-size: 14px;
+    color: #475569 !important;
+    margin-bottom: 24px;
+  }
+  .input-group input {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 2px solid #cbd5e1;
+    background: #f8fafc;
+    color: #0f172a !important;
+    margin-bottom: 20px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-group input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  }
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .error-text {
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 10px;
+    font-weight: 600;
+  }
+
+  /* ============================================================
+     ADMIN DASHBOARD OVERLAY STYLING (High readability, solid backing)
+     ============================================================ */
+  .dashboard-overlay {
+    display: none;
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f1f5f9; /* Solid light grey canvas completely blocking page elements */
+    z-index: 99998;
+    overflow-y: auto;
+    padding: 40px var(--space-5);
+  }
+
+  .dashboard-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 36px;
+    background: #ffffff !important; /* Solid white card */
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    color: #0f172a;
+  }
+
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 18px;
+  }
+
+  .btn-close {
+    font-size: 32px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--color-text-soft);
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .btn-close:hover {
+    color: #ef4444;
+  }
+
+  .dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 36px;
+  }
+
+  .stat-card {
+    padding: 24px;
+    text-align: center;
+    background: #f8fafc !important; /* Solid slate backing for stats */
+    border: 1px solid #e2e8f0 !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: none !important;
+  }
+
+  .stat-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-size: 36px;
+    font-weight: 800;
+    color: #2563eb;
+    margin-bottom: 6px;
+  }
+
+  .stat-desc {
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  .dashboard-tables-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .dashboard-table-box {
+    padding: 28px;
+    background: #f8fafc !important; /* Solid slate backing for tables */
+    border: 1px solid #e2e8f0 !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .dashboard-table-box h3 {
+    margin-bottom: 18px;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    text-align: left;
+  }
+  .admin-table th, .admin-table td {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .admin-table th {
+    font-weight: 700;
+    color: var(--color-text-soft);
+  }
+  .admin-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .loading-cell {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding-block: 28px;
+  }
+
+  .status-badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .status-badge.pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+  }
+  .status-badge.approved {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+  }
+
+  /* ============================================================
+     EDIT MODE HOVER OUTLINES
+     ============================================================ */
+  :global(body.edit-mode-active) :global([contenteditable="true"]) {
+    outline: 2px dashed var(--color-primary) !important;
+    outline-offset: 4px;
+    cursor: text !important;
+  }
+  :global(body.edit-mode-active) :global([contenteditable="true"]:hover) {
+    background: rgba(59, 130, 246, 0.08) !important;
+  }
+
+  /* Lock button in footer */
+  .footer-lock-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.35;
+    transition: opacity 0.2s;
+  }
+  .footer-lock-btn:hover {
+    opacity: 0.9;
+  }
+</style>
+
+<script>
+  // Supabase REST client configuration
+  const SUPABASE_URL = "https://vhwexymjfnsacwxzsgsl.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZod2V4eW1qZm5zYWN3eHpzZ3NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMTgwOTAsImV4cCI6MjA5ODc5NDA5MH0.i1RbqqyZ6Y6XnrKeG53KAc64oaciE-DDi9yQ7Ms3-C4";
+
+  // Elements
+  const loginModal = document.getElementById('admin-login-modal');
+  const passwordInput = document.getElementById('admin-password');
+  const btnLoginSubmit = document.getElementById('btn-login-submit');
+  const btnLoginClose = document.getElementById('btn-login-close');
+  const loginErrorMsg = document.getElementById('login-error-msg');
+  const adminTopBar = document.getElementById('admin-top-bar');
+  const btnAdminDashboard = document.getElementById('btn-admin-dashboard');
+  const dashboardOverlay = document.getElementById('admin-dashboard-overlay');
+  const btnCloseDashboard = document.getElementById('btn-close-dashboard');
+  const btnAdminLogout = document.getElementById('btn-admin-logout');
+  const btnResetCache = document.getElementById('btn-reset-cache');
+  const editModeToggle = document.getElementById('edit-mode-toggle');
+  const editModeLabel = document.getElementById('edit-mode-label');
+
+  // Check login state
+  const checkAuth = () => {
+    return localStorage.getItem('oriva_admin_auth') === 'true';
+  };
+
+  const showAdminBar = () => {
+    if (adminTopBar) adminTopBar.classList.remove('admin-top-bar-hidden');
+    document.body.classList.add('admin-bar-active');
+    loadNotificationsCount();
+  };
+
+  const hideAdminBar = () => {
+    if (adminTopBar) adminTopBar.classList.add('admin-top-bar-hidden');
+    document.body.classList.remove('admin-bar-active');
+  };
+
+  // Setup click triggers on all logos and lock buttons
+  const setupTriggers = () => {
+    // 1. Triple click on any logo
+    document.querySelectorAll('.logo').forEach(el => {
+      let clickCount = 0;
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        clickCount++;
+        if (clickCount === 3) {
+          clickCount = 0;
+          openLogin();
+        }
+        // Reset count after 1.5 seconds of inactivity
+        setTimeout(() => { clickCount = 0; }, 1500);
+      });
+    });
+
+    // 2. Footer lock button
+    const footerBtn = document.getElementById('btn-footer-admin-lock');
+    if (footerBtn) {
+      footerBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openLogin();
+      });
+    }
+
+    // 3. Inject lock button container into footer if footer exists
+    const copyrightEl = document.querySelector('.copyright');
+    const container = document.getElementById('footer-admin-trigger-container');
+    if (copyrightEl && container) {
+      copyrightEl.parentNode.appendChild(container);
+      container.style.display = 'inline-block';
+    }
+  };
+
+  const openLogin = () => {
+    if (!checkAuth() && loginModal && passwordInput) {
+      loginModal.style.display = 'flex';
+      passwordInput.focus();
+    }
+  };
+
+  // Keyboard shortcut Ctrl+Alt+A to login
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'a') {
+      openLogin();
+    }
+  });
+
+  // Close Login Modal
+  if (btnLoginClose) {
+    btnLoginClose.addEventListener('click', () => {
+      if (loginModal) loginModal.style.display = 'none';
+      if (loginErrorMsg) loginErrorMsg.innerText = '';
+    });
+  }
+
+  // Handle Login Submit
+  if (btnLoginSubmit) {
+    btnLoginSubmit.addEventListener('click', () => {
+      if (!passwordInput || !loginModal || !loginErrorMsg) return;
+      const password = (passwordInput as HTMLInputElement).value;
+      if (password === 'oriva2026') {
+        localStorage.setItem('oriva_admin_auth', 'true');
+        loginModal.style.display = 'none';
+        (passwordInput as HTMLInputElement).value = '';
+        loginErrorMsg.innerText = '';
+        showAdminBar();
+      } else {
+        loginErrorMsg.innerText = 'Неверный пароль администратора!';
+      }
+    });
+  }
+
+  // Handle Logout
+  if (btnAdminLogout) {
+    btnAdminLogout.addEventListener('click', () => {
+      localStorage.removeItem('oriva_admin_auth');
+      hideAdminBar();
+      disableEditMode();
+      if (dashboardOverlay) dashboardOverlay.style.display = 'none';
+    });
+  }
+
+  // Reset Cache
+  if (btnResetCache) {
+    btnResetCache.addEventListener('click', () => {
+      localStorage.clear();
+      alert('Кэш успешно сброшен!');
+      window.location.reload();
+    });
+  }
+
+  // Unique selector path generator for reliable page-session text saving
+  const getElementPath = (el) => {
+    const path = [];
+    let current = el;
+    while (current && current.nodeType === Node.ELEMENT_NODE) {
+      let selector = current.nodeName.toLowerCase();
+      if (current.id) {
+        selector += '#' + current.id;
+        path.unshift(selector);
+        break;
+      } else {
+        let sibling = current;
+        let nth = 1;
+        while (sibling = sibling.previousElementSibling) {
+          if (sibling.nodeName.toLowerCase() === current.nodeName.toLowerCase()) {
+            nth++;
+          }
+        }
+        selector += `:nth-of-type(${nth})`;
+      }
+      path.unshift(selector);
+      current = current.parentNode;
+    }
+    return path.join(' > ');
+  };
+
+  // Edit Mode Logic
+  const enableEditMode = () => {
+    document.body.classList.add('edit-mode-active');
+    if (editModeLabel) editModeLabel.innerText = 'Режим правки включен';
+    
+    // Find all texts to make editable
+    const selectors = 'h1, h2, h3, h4, h5, h6, p, span, a, button, li, td, th, div.stat-value, div.stat-desc, div.faq-question, div.faq-answer';
+    document.querySelectorAll(selectors).forEach((el) => {
+      if (!el.closest('#admin-bar-root') && !el.closest('#admin-dashboard-overlay')) {
+        el.setAttribute('contenteditable', 'true');
+        
+        // Auto save on edit
+        el.addEventListener('blur', () => {
+          const key = `edit_text_${getElementPath(el)}`;
+          localStorage.setItem(key, el.textContent.trim());
+        });
+      }
+    });
+  };
+
+  const disableEditMode = () => {
+    document.body.classList.remove('edit-mode-active');
+    if (editModeLabel) editModeLabel.innerText = 'Режим правки выключен';
+    document.querySelectorAll('[contenteditable="true"]').forEach((el) => {
+      el.removeAttribute('contenteditable');
+    });
+  };
+
+  if (editModeToggle) {
+    editModeToggle.addEventListener('change', () => {
+      const toggle = editModeToggle as HTMLInputElement;
+      if (toggle.checked) {
+        enableEditMode();
+      } else {
+        disableEditMode();
+      }
+    });
+  }
+
+  // Intercept click on links/buttons in Edit Mode to prompt for url edit instead of navigating
+  document.addEventListener('click', (e) => {
+    if (!document.body.classList.contains('edit-mode-active')) return;
+    
+    const targetLink = (e.target as HTMLElement).closest('a');
+    if (targetLink && !targetLink.closest('#admin-bar-root') && !targetLink.closest('#admin-dashboard-overlay')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const path = getElementPath(targetLink);
+      const currentHref = targetLink.getAttribute('href') || '';
+      const newHref = prompt(`Укажите ссылку для кнопки/ссылки "${targetLink.textContent.trim()}":`, currentHref);
+      if (newHref !== null) {
+        targetLink.setAttribute('href', newHref);
+        localStorage.setItem(`edit_href_${path}`, newHref);
+      }
+    }
+  }, true); // Capture phase to intercept actions
+
+  // Load custom content on page startup
+  const applyStoredContent = () => {
+    const selectors = 'h1, h2, h3, h4, h5, h6, p, span, a, button, li, td, th, div.stat-value, div.stat-desc, div.faq-question, div.faq-answer';
+    document.querySelectorAll(selectors).forEach((el) => {
+      if (!el.closest('#admin-bar-root') && !el.closest('#admin-dashboard-overlay')) {
+        const path = getElementPath(el);
+        // Load text
+        const savedText = localStorage.getItem(`edit_text_${path}`);
+        if (savedText) {
+          el.textContent = savedText;
+        }
+        // Load href if link
+        if (el.tagName.toLowerCase() === 'a') {
+          const savedHref = localStorage.getItem(`edit_href_${path}`);
+          if (savedHref) {
+            el.setAttribute('href', savedHref);
+          }
+        }
+      }
+    });
+  };
+
+  // Dashboard Modal Overlay logic
+  if (btnAdminDashboard) {
+    btnAdminDashboard.addEventListener('click', () => {
+      if (dashboardOverlay) dashboardOverlay.style.display = 'block';
+      loadDashboardData();
+    });
+  }
+
+  if (btnCloseDashboard) {
+    btnCloseDashboard.addEventListener('click', () => {
+      if (dashboardOverlay) dashboardOverlay.style.display = 'none';
+    });
+  }
+
+  // Supabase Fetch wrapper
+  async function fetchSupabase(table, options = {}) {
+    try {
+      const separator = table.includes('?') ? '&' : '?';
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}${separator}t=${Date.now()}`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        ...options
+      });
+      if (!response.ok) {
+        console.error(`Supabase response error: ${response.statusText}`);
+        return [];
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.error('Supabase fetch failed', e);
+      return [];
+    }
+  }
+
+  // Load notifications count (pending apps & purchases)
+  async function loadNotificationsCount() {
+    try {
+      const pendingApps = await fetchSupabase('agency_applications?status=eq.pending&select=id', { method: 'GET' });
+      const pendingPurchases = await fetchSupabase('purchases?status=eq.pending&select=id', { method: 'GET' });
+      const totalCount = pendingApps.length + pendingPurchases.length;
+      const countEl = document.getElementById('notifications-count');
+      if (countEl) countEl.innerText = totalCount.toString();
+    } catch (e) {
+      console.error('Error fetching notifications count', e);
+    }
+  }
+
+  // Load Dashboard Data
+  async function loadDashboardData() {
+    try {
+      // 1. Fetch counts
+      const users = await fetchSupabase('users?select=*', { method: 'GET' });
+      const purchases = await fetchSupabase('purchases?select=*', { method: 'GET' });
+      const apps = await fetchSupabase('agency_applications?select=*', { method: 'GET' });
+
+      const uEl = document.getElementById('stat-total-users');
+      const pEl = document.getElementById('stat-total-purchases');
+      const aEl = document.getElementById('stat-total-applications');
+
+      if (uEl) uEl.innerText = users.length.toString();
+      if (pEl) pEl.innerText = purchases.length.toString();
+      if (aEl) aEl.innerText = apps.length.toString();
+
+      // 2. Populate Users Table
+      const usersBody = document.getElementById('users-table-body');
+      if (usersBody) {
+        usersBody.innerHTML = '';
+        if (users.length === 0) {
+          usersBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Нет зарегистрированных пользователей</td></tr>';
+        } else {
+          users.slice(-5).reverse().forEach(u => {
+            const regDate = new Date(u.registered_at).toLocaleDateString('ru-RU');
+            usersBody.innerHTML += `
+              <tr>
+                <td><code>${u.telegram_id}</code></td>
+                <td>${u.first_name}</td>
+                <td>@${u.username || '-'}</td>
+                <td>${regDate}</td>
+              </tr>
+            `;
+          });
+        }
+      }
+
+      // 3. Populate Applications Table
+      const appsBody = document.getElementById('apps-table-body');
+      if (appsBody) {
+        appsBody.innerHTML = '';
+        if (apps.length === 0) {
+          appsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Нет заявок</td></tr>';
+        } else {
+          apps.slice(-5).reverse().forEach(a => {
+            const birthDate = a.birth_date ? new Date(a.birth_date).toLocaleDateString('ru-RU') : '-';
+            appsBody.innerHTML += `
+              <tr>
+                <td><b>${a.full_name}</b></td>
+                <td>${birthDate}</td>
+                <td>${a.about || '-'}</td>
+                <td><span class="status-badge ${a.status}">${a.status === 'pending' ? 'В обработке' : 'Принята'}</span></td>
+              </tr>
+            `;
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Error loading dashboard data', e);
+    }
+  }
+
+  // Init
+  setupTriggers();
+  if (checkAuth()) {
+    showAdminBar();
+  }
+  applyStoredContent();
+</script>

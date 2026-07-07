@@ -1,0 +1,313 @@
+@import "tailwindcss";
+
+/* ============================================================
+   ORIVAL LAB — Global Design System
+   Style: Premium Frosted Glassmorphism (AlignIQ & Loomi3D Inspired)
+   ============================================================ */
+:root {
+  /* ---------- Color: Brand ---------- */
+  --blue-50:   #f0f7ff;
+  --blue-100:  #e0f2fe;
+  --blue-250:  #bae6fd;
+  --blue-500:  #3b82f6;
+  --blue-600:  #2563eb;
+
+  --violet-100: #ede9fe;
+  --violet-200: #ddd6fe;
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;
+
+  /* ---------- Color: Surfaces ---------- */
+  --color-bg:        #e3ecf5; /* Premium soft sky-blue backdrop */
+  --color-bg-alt:    rgba(255, 255, 255, 0.25);
+  --color-surface:   rgba(255, 255, 255, 0.45); /* Frosted glass */
+  --color-surface-solid: rgba(255, 255, 255, 0.9);
+  --color-border:    rgba(255, 255, 255, 0.45); /* Soft white border */
+
+  /* ---------- Color: Text ---------- */
+  --color-text:         #0f172a; /* Deep slate */
+  --color-text-soft:    #334155;
+  --color-text-muted:   #64748b;
+  --color-text-invert:  #ffffff;
+
+  /* ---------- Color: Brand mapped ---------- */
+  --color-primary:    #2563eb; /* Cobalt Blue */
+  --color-primary-soft: #60a5fa;
+  --color-secondary:  #7c3aed; /* Violet */
+  --color-accent:     #06b6d4;  /* Cyan */
+  --color-cta:        linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%);
+  --color-cta-solid:  #3b82f6;
+
+  /* ---------- Gradients ---------- */
+  --gradient-dream: linear-gradient(135deg, rgba(240, 249, 255, 0.5) 0%, rgba(237, 233, 254, 0.5) 100%);
+  --gradient-soft:  linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%);
+  --gradient-aurora: linear-gradient(120deg, #bae6fd 0%, #ddd6fe 50%, #fbcfe8 100%);
+
+  /* ---------- Typography ---------- */
+  --font-display: 'Plus Jakarta Sans', 'Outfit', system-ui, sans-serif;
+  --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --fs-xs:   0.75rem;
+  --fs-sm:   0.875rem;
+  --fs-base: 1rem;
+  --fs-lg:   1.125rem;
+  --fs-xl:   1.375rem;
+  --fs-2xl:  1.75rem;
+  --fs-3xl:  2.25rem;
+  --fs-4xl:  3rem;
+  --fs-5xl:  clamp(2.75rem, 6.5vw, 5rem);
+
+  --lh-tight: 1.15;
+  --lh-snug:  1.3;
+  --lh-normal: 1.6;
+
+  /* ---------- Spacing (4/8 rhythm) ---------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+
+  /* ---------- Radius ---------- */
+  --radius-sm: 14px;
+  --radius-md: 22px;
+  --radius-lg: 36px;
+  --radius-xl: 52px;
+  --radius-full: 999px;
+
+  /* ---------- Shadows (extremely soft and premium) ---------- */
+  --shadow-xs: 0 4px 16px rgba(31, 38, 135, 0.02);
+  --shadow-sm: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+  --shadow-md: 0 16px 48px rgba(31, 38, 135, 0.06);
+  --shadow-lg: 0 32px 80px rgba(31, 38, 135, 0.09);
+  --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.3);
+
+  /* ---------- Motion ---------- */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 150ms;
+  --dur-base: 350ms;
+  --dur-slow: 600ms;
+
+  /* ---------- Layout ---------- */
+  --container: 1200px;
+  --container-narrow: 880px;
+  --header-h: 76px;
+}
+
+/* Theme is forced to premium light sky-blue glassmorphic theme to match design references */
+
+/* ============================================================
+   RESET
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  color: var(--color-text);
+  background: var(--color-bg);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img, svg, video { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+ul, ol { list-style: none; }
+input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; border-radius: 4px; }
+
+/* ============================================================
+   BACKGROUND EFFECTS (Loomi3D Glowing Blobs)
+   ============================================================ */
+body::before, body::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(150px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.65;
+  animation: floatSlow 25s infinite alternate ease-in-out;
+}
+body::before {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, rgba(59, 130, 246, 0.1) 100%);
+  top: -150px;
+  right: -100px;
+}
+body::after {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, rgba(139, 92, 246, 0.05) 100%);
+  bottom: -100px;
+  left: -150px;
+  animation-delay: -8s;
+}
+
+/* ============================================================
+   LAYOUT PRIMITIVES
+   ============================================================ */
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--space-5);
+}
+
+.section {
+  padding-block: var(--space-10);
+  position: relative;
+}
+@media (max-width: 768px) {
+  .section { padding-block: var(--space-8); }
+}
+
+/* ---------- Typography helpers ---------- */
+.display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.03em;
+}
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  opacity: 0.85;
+}
+.gradient-text {
+  background: var(--gradient-soft);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============================================================
+   BUTTONS (Sleek Glassmorphic Styling)
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0.95rem 1.9rem;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: var(--fs-base);
+  transition: transform var(--dur-fast) var(--ease-out-soft),
+              box-shadow var(--dur-fast) var(--ease-out-soft),
+              background var(--dur-fast) var(--ease-out-soft);
+  will-change: transform;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: var(--color-cta);
+  color: white;
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.25);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  background-position: 100% 50%;
+  box-shadow: 0 12px 36px rgba(59, 130, 246, 0.35);
+}
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
+}
+.btn-ghost:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.45);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   FROSTED GLASS CARD (True Loomi3D Glass)
+   ============================================================ */
+.glass {
+  background: var(--color-surface);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   ANIMATIONS (reveal on scroll)
+   ============================================================ */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s var(--ease-out-soft),
+              transform 0.8s var(--ease-out-soft);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-30px) rotate(8deg); }
+}
+@keyframes floatSlow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(30px, -20px) scale(1.03); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 0.8; transform: scale(1.05); }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-reveal] { opacity: 1; transform: none; }
+}
+
+/* ---------- Selection ---------- */
+::selection {
+  background: var(--blue-250);
+  color: var(--color-text);
+}
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-bg-alt); }
+::-webkit-scrollbar-thumb {
+  background: var(--blue-250);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-bg-alt);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--blue-500); }

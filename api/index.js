@@ -16,13 +16,18 @@ export default async function handler(req, res) {
   const host = req.headers['host'];
   const fullUrl = `${protocol}://${host}${req.url}`;
 
-  // Read request body
-  let body = null;
+  // Read request body as buffer
+  let bodyBuffer = null;
   if (req.method === 'POST') {
-    body = JSON.stringify(req.body);
+    bodyBuffer = await new Promise((resolve, reject) => {
+      const chunks = [];
+      req.on('data', chunk => chunks.push(chunk));
+      req.on('end', () => resolve(Buffer.concat(chunks)));
+      req.on('error', reject);
+    });
   }
 
-  // Construct Mock env object from Vercel process.env
+  // Construct env object from Vercel process.env
   const env = {
     BOT_TOKEN: process.env.BOT_TOKEN,
     ADMIN_CHAT_ID: process.env.ADMIN_CHAT_ID,
@@ -34,20 +39,29 @@ export default async function handler(req, res) {
   };
 
   try {
-    const workerRequest = new Request(fullUrl, {
+    // Build a Web API Request compatible with the Cloudflare Worker handler
+    const requestInit = {
       method: req.method,
-      headers: req.headers,
-      body: body
-    });
+      headers: Object.fromEntries(
+        Object.entries(req.headers).map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : v])
+      ),
+    };
 
+    if (bodyBuffer && bodyBuffer.length > 0) {
+      requestInit.body = bodyBuffer;
+    }
+
+    const workerRequest = new Request(fullUrl, requestInit);
     const response = await worker.fetch(workerRequest, env);
-    
+
     // Copy status and headers
     res.status(response.status);
     response.headers.forEach((v, k) => res.setHeader(k, v));
-    res.send(await response.text());
+
+    const responseBody = await response.arrayBuffer();
+    res.end(Buffer.from(responseBody));
   } catch (err) {
-    console.error("Vercel Handler Error:", err);
+    console.error('Vercel Handler Error:', err);
     res.status(500).send(err.message);
   }
 }

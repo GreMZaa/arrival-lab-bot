@@ -1,0 +1,555 @@
+---
+// Premium Buy & Apply Modals for Oriva Lab Website
+---
+
+<!-- Modal Root Container -->
+<div id="modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; align-items: center; justify-content: center; font-family: 'Inter', -apple-system, sans-serif; box-sizing: border-box; padding: 16px;">
+  <!-- Backdrop -->
+  <div id="modal-backdrop" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(8, 10, 20, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); transition: opacity 0.3s ease;"></div>
+
+  <!-- Modal Box -->
+  <div id="modal-box" style="position: relative; width: 100%; max-width: 540px; background: rgba(21, 23, 38, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 80px rgba(95, 0, 245, 0.15); padding: 32px; box-sizing: border-box; overflow-y: auto; max-height: calc(100vh - 32px); z-index: 1010; transform: scale(0.95); opacity: 0; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease; color: #ffffff;">
+    
+    <!-- Close Button -->
+    <button id="modal-close" style="position: absolute; top: 24px; right: 24px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); font-size: 20px; cursor: pointer; color: #94a3b8; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#ffffff'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='#94a3b8'">
+      &times;
+    </button>
+
+    <!-- Modal Content: Buy Program -->
+    <div id="modal-content-buy" style="display: none;">
+      <div style="margin-bottom: 24px;">
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #a855f7; letter-spacing: 0.1em; display: inline-block; margin-bottom: 6px;">Оформление заказа</span>
+        <h3 id="buy-title" style="font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin: 0;">Купить программу</h3>
+        <p id="buy-subtitle" style="color: #94a3b8; font-size: 14px; margin-top: 4px; margin-bottom: 0;">Под ключ за 49 900 ₽</p>
+      </div>
+
+      <!-- Step 1: User Info & Contact Details -->
+      <div id="buy-step-1" style="display: block;">
+        <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px;">
+          
+          <!-- Responsive Grid for Inputs -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Имя пользователя Telegram</label>
+              <div style="position: relative;">
+                <span style="position: absolute; left: 14px; top: 12px; color: #64748b; font-size: 14px;">@</span>
+                <input type="text" id="buy-username" placeholder="username" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 16px 12px 28px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)">
+              </div>
+              <span id="buy-username-error" style="color: #f87171; font-size: 11px; display: none; margin-top: 4px;">Пожалуйста, укажите ваш Telegram.</span>
+            </div>
+
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Ваше ФИО</label>
+              <input type="text" id="buy-fullname" placeholder="Иванов Иван Иванович" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 16px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)">
+              <span id="buy-fullname-error" style="color: #f87171; font-size: 11px; display: none; margin-top: 4px;">Пожалуйста, введите ваше ФИО.</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Дата рождения</label>
+              <input type="date" id="buy-birthdate" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 11px 16px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)">
+            </div>
+
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Номер телефона</label>
+              <input type="tel" id="buy-phone" placeholder="+7 (999) 999-99-99" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 16px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)">
+              <span id="buy-phone-error" style="color: #f87171; font-size: 11px; display: none; margin-top: 4px;">Пожалуйста, укажите ваш телефон.</span>
+            </div>
+          </div>
+
+          <div>
+            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Электронная почта (Email)</label>
+            <input type="email" id="buy-email" placeholder="example@mail.ru" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 16px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)">
+            <span id="buy-email-error" style="color: #f87171; font-size: 11px; display: none; margin-top: 4px;">Пожалуйста, укажите ваш Email.</span>
+          </div>
+
+          <div id="payment-methods-section">
+            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 10px;">Способ оплаты</label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <label style="border: 2px solid #5f00f5; border-radius: 14px; padding: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: rgba(95, 0, 245, 0.04); transition: all 0.2s;" id="label-pay-card">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span style="font-size: 20px;">💳</span>
+                  <div>
+                    <div style="font-size: 14px; font-weight: 600;">Банковская карта / СБП</div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Оплата по СБП или выставление счета</div>
+                  </div>
+                </div>
+                <input type="radio" name="payment_method" value="card" checked style="accent-color: #5f00f5;" onclick="selectPayMethod('card')">
+              </label>
+
+              <label style="border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s;" id="label-pay-crypto">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span style="font-size: 20px;">🪙</span>
+                  <div>
+                    <div style="font-size: 14px; font-weight: 600;">USDT TRC-20</div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Оплата криптовалютой в сети Tron</div>
+                  </div>
+                </div>
+                <input type="radio" name="payment_method" value="usdt" style="accent-color: #5f00f5;" onclick="selectPayMethod('usdt')">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="goToBuyStep2()" style="width: 100%; border: none; background: linear-gradient(135deg, #7c3aed, #5f00f5); color: white; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(95, 0, 245, 0.25); transition: all 0.2s;" onmouseover="this.style.opacity='0.95'" onmouseout="this.style.opacity='1'" id="btn-buy-next">
+          Продолжить
+        </button>
+      </div>
+
+      <!-- Step 2: Payment Instructions -->
+      <div id="buy-step-2" style="display: none;">
+        <!-- Card Instructions -->
+        <div id="instructions-card" style="display: block;">
+          <div style="background: rgba(95, 0, 245, 0.05); border: 1px solid rgba(95, 0, 245, 0.1); border-radius: 16px; padding: 20px; font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
+            <p style="margin-bottom: 12px; color: white;">Для завершения платежа и выставления счета свяжитесь с нашей службой заботы в Telegram:</p>
+            <a href="https://t.me/success_vstream" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #5f00f5; color: white; padding: 10px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+              <span>💬</span> @success_vstream
+            </a>
+          </div>
+        </div>
+
+        <!-- Crypto Instructions -->
+        <div id="instructions-crypto" style="display: none;">
+          <div style="background: rgba(95, 0, 245, 0.05); border: 1px solid rgba(95, 0, 245, 0.1); border-radius: 16px; padding: 20px; font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
+            <p style="margin-bottom: 10px; color: white;">Для оплаты переведите нужную сумму в USDT на адрес кошелька <b>TRC-20</b>:</p>
+            
+            <div style="display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+              <code id="usdt-wallet-address" style="font-size: 12px; font-weight: 600; color: white; word-break: break-all; flex-grow: 1;">TR7NHqjuwNuZt8hDPKW6Re11A6SkgCw6SS</code>
+              <button onclick="copyWallet()" style="border: none; background: rgba(255, 255, 255, 0.1); color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+                Копировать
+              </button>
+            </div>
+            
+            <p style="font-size: 12px; color: #94a3b8; font-style: italic; margin: 0;">После перевода пришлите скриншот транзакции в нашу службу заботы: <a href="https://t.me/success_vstream" target="_blank" style="color: #a855f7; font-weight: 600; text-decoration: none;">@success_vstream</a></p>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button onclick="backToBuyStep1()" style="flex: 1; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: #ffffff; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.08)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+            Назад
+          </button>
+          <button onclick="submitPurchase()" id="btn-submit-purchase" style="flex: 2; border: none; background: linear-gradient(135deg, #7c3aed, #5f00f5); color: white; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(95, 0, 245, 0.25);">
+            Подтвердить заказ
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Success -->
+      <div id="buy-success" style="display: none; text-align: center; padding: 16px 0;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(0, 177, 89, 0.15); color: #00b159; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 20px auto; border: 1px solid rgba(0, 177, 89, 0.2);">
+          ✓
+        </div>
+        <h4 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Заказ зарегистрирован!</h4>
+        <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">
+          Ваш заказ успешно добавлен в систему. Куратор Oriva Lab свяжется с вами в Telegram в ближайшее время для подтверждения.
+        </p>
+        <button onclick="closeModal()" style="border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: white; padding: 12px 32px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+          Закрыть
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Content: Agency Application -->
+    <div id="modal-content-agency" style="display: none;">
+      <div style="margin-bottom: 24px;">
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #ec4899; letter-spacing: 0.1em; display: inline-block; margin-bottom: 6px;">Партнерская программа</span>
+        <h3 style="font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin: 0;">Вступить в агентство</h3>
+        <p style="color: #94a3b8; font-size: 14px; margin-top: 4px; margin-bottom: 0;">Заполнение анкеты Oriva Talents</p>
+      </div>
+
+      <!-- Step 1: Fields -->
+      <div id="agency-step-1" style="display: block;">
+        <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px;">
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Telegram Username</label>
+              <div style="position: relative;">
+                <span style="position: absolute; left: 14px; top: 12px; color: #64748b; font-size: 14px;">@</span>
+                <input type="text" id="agency-username" placeholder="username" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 16px 12px 28px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)">
+              </div>
+              <span id="agency-username-error" style="color: #f87171; font-size: 11px; display: none; margin-top: 4px;">Пожалуйста, укажите ваш Telegram.</span>
+            </div>
+
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Ваше ФИО</label>
+              <input type="text" id="agency-fullname" placeholder="Иванов Иван Иванович" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 16px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)">
+              <span id="agency-fullname-error" style="color: #f87171; font-size: 11px; display: none; margin-top: 4px;">Пожалуйста, введите ваше полное имя.</span>
+            </div>
+          </div>
+
+          <div>
+            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Дата рождения</label>
+            <input type="date" id="agency-birthdate" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 11px 16px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)">
+          </div>
+
+          <div>
+            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Расскажите о себе</label>
+            <textarea id="agency-about" rows="4" placeholder="Есть ли у вас опыт стриминга? Почему хотите работать с нами? Опишите цели..." style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 16px; box-sizing: border-box; background: rgba(15, 23, 42, 0.4); color: white; font-size: 14px; outline: none; resize: vertical; min-height: 90px; font-family: inherit; transition: all 0.2s;" onfocus="focusInput(this)" onblur="blurInput(this)"></textarea>
+            <span id="agency-about-error" style="color: #f87171; font-size: 11px; display: none; margin-top: 4px;">Пожалуйста, напишите хотя бы пару строк о себе.</span>
+          </div>
+        </div>
+
+        <button onclick="submitApplication()" id="btn-submit-agency" style="width: 100%; border: none; background: linear-gradient(135deg, #ec4899, #d946ef); color: white; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25); transition: all 0.2s;" onmouseover="this.style.opacity='0.95'" onmouseout="this.style.opacity='1'">
+          Отправить заявку
+        </button>
+      </div>
+
+      <!-- Step 2: Success -->
+      <div id="agency-success" style="display: none; text-align: center; padding: 16px 0;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(0, 177, 89, 0.15); color: #00b159; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 20px auto; border: 1px solid rgba(0, 177, 89, 0.2);">
+          ✓
+        </div>
+        <h4 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Анкета успешно отправлена!</h4>
+        <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">
+          Ваша заявка зарегистрирована в системе и отправлена на рассмотрение. Мы внимательно изучим её и напишем вам в Telegram в ближайшие дни.
+        </p>
+        <button onclick="closeModal()" style="border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: white; padding: 12px 32px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+          Закрыть
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script is:inline>
+  let selectedProgram = null;
+  let selectedMethod = 'card';
+
+  // Floating focus / blur animations
+  window.focusInput = function(el) {
+    el.style.borderColor = '#7c3aed';
+    el.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.25)';
+    el.style.background = 'rgba(15, 23, 42, 0.6)';
+  };
+
+  window.blurInput = function(el) {
+    el.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+    el.style.boxShadow = 'none';
+    el.style.background = 'rgba(15, 23, 42, 0.4)';
+  };
+
+  // Open Purchase Modal
+  window.openPurchaseModal = function(programId) {
+    selectedProgram = programId;
+    
+    let titleText = 'Купить программу';
+    let subtitleText = 'Оформление заказа';
+    
+    if (programId === 'start') {
+      titleText = 'Скачать программу START';
+      subtitleText = 'Регистрация бесплатного доступа';
+    } else if (programId === 'launch') {
+      titleText = 'Купить программу LAUNCH';
+      subtitleText = 'Под ключ за 49 900 ₽';
+    } else if (programId === 'restart') {
+      titleText = 'Купить программу RESTART';
+      subtitleText = 'Переход на виртуальный формат за 39 900 ₽';
+    } else if (programId === 'platform_pro') {
+      titleText = 'Купить программу PLATFORM PRO';
+      subtitleText = 'Специализированные площадки от 59 900 ₽';
+    }
+
+    document.getElementById('buy-title').innerText = titleText;
+    document.getElementById('buy-subtitle').innerText = subtitleText;
+
+    // Adjust step view based on program
+    if (programId === 'start') {
+      document.getElementById('payment-methods-section').style.display = 'none';
+      document.getElementById('btn-buy-next').innerText = 'Зарегистрировать и скачать';
+    } else {
+      document.getElementById('payment-methods-section').style.display = 'block';
+      document.getElementById('btn-buy-next').innerText = 'Продолжить';
+    }
+
+    // Reset views
+    document.getElementById('buy-step-1').style.display = 'block';
+    document.getElementById('buy-step-2').style.display = 'none';
+    document.getElementById('buy-success').style.display = 'none';
+    
+    document.getElementById('modal-content-buy').style.display = 'block';
+    document.getElementById('modal-content-agency').style.display = 'none';
+    
+    openModalContainer();
+  };
+
+  // Open Agency Modal
+  window.openAgencyModal = function() {
+    document.getElementById('agency-step-1').style.display = 'block';
+    document.getElementById('agency-success').style.display = 'none';
+
+    document.getElementById('modal-content-buy').style.display = 'none';
+    document.getElementById('modal-content-agency').style.display = 'block';
+
+    openModalContainer();
+  };
+
+  function openModalContainer() {
+    const container = document.getElementById('modal-container');
+    const box = document.getElementById('modal-box');
+    container.style.display = 'flex';
+    
+    // Animate
+    setTimeout(() => {
+      box.style.transform = 'scale(1)';
+      box.style.opacity = '1';
+    }, 10);
+  };
+
+  window.closeModal = function() {
+    const container = document.getElementById('modal-container');
+    const box = document.getElementById('modal-box');
+    
+    box.style.transform = 'scale(0.95)';
+    box.style.opacity = '0';
+    
+    setTimeout(() => {
+      container.style.display = 'none';
+    }, 200);
+  };
+
+  // Event Listeners for Backdrop / Close Button
+  document.getElementById('modal-backdrop').addEventListener('click', window.closeModal);
+  document.getElementById('modal-close').addEventListener('click', window.closeModal);
+
+  // Radio button/card selector
+  window.selectPayMethod = function(method) {
+    selectedMethod = method;
+    const cardLabel = document.getElementById('label-pay-card');
+    const cryptoLabel = document.getElementById('label-pay-crypto');
+    const cardRadio = document.querySelector('input[name="payment_method"][value="card"]');
+    const cryptoRadio = document.querySelector('input[name="payment_method"][value="usdt"]');
+    
+    if (method === 'card') {
+      cardLabel.style.border = '2px solid #5f00f5';
+      cardLabel.style.background = 'rgba(95, 0, 245, 0.04)';
+      cryptoLabel.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+      cryptoLabel.style.background = 'transparent';
+      cardRadio.checked = true;
+    } else {
+      cardLabel.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+      cardLabel.style.background = 'transparent';
+      cryptoLabel.style.border = '2px solid #5f00f5';
+      cryptoLabel.style.background = 'rgba(95, 0, 245, 0.04)';
+      cryptoRadio.checked = true;
+    }
+  };
+
+  window.goToBuyStep2 = function() {
+    const username = document.getElementById('buy-username').value.trim();
+    const fullname = document.getElementById('buy-fullname').value.trim();
+    const phone = document.getElementById('buy-phone').value.trim();
+    const email = document.getElementById('buy-email').value.trim();
+    
+    let hasError = false;
+
+    if (!username) {
+      document.getElementById('buy-username-error').style.display = 'block';
+      hasError = true;
+    } else {
+      document.getElementById('buy-username-error').style.display = 'none';
+    }
+
+    if (!fullname) {
+      document.getElementById('buy-fullname-error').style.display = 'block';
+      hasError = true;
+    } else {
+      document.getElementById('buy-fullname-error').style.display = 'none';
+    }
+
+    if (!phone) {
+      document.getElementById('buy-phone-error').style.display = 'block';
+      hasError = true;
+    } else {
+      document.getElementById('buy-phone-error').style.display = 'none';
+    }
+
+    if (!email) {
+      document.getElementById('buy-email-error').style.display = 'block';
+      hasError = true;
+    } else {
+      document.getElementById('buy-email-error').style.display = 'none';
+    }
+
+    if (hasError) return;
+
+    if (selectedProgram === 'start') {
+      submitPurchase();
+      return;
+    }
+
+    document.getElementById('buy-step-1').style.display = 'none';
+    document.getElementById('buy-step-2').style.display = 'block';
+
+    if (selectedMethod === 'card') {
+      document.getElementById('instructions-card').style.display = 'block';
+      document.getElementById('instructions-crypto').style.display = 'none';
+    } else {
+      document.getElementById('instructions-card').style.display = 'none';
+      document.getElementById('instructions-crypto').style.display = 'block';
+    }
+  };
+
+  window.backToBuyStep1 = function() {
+    document.getElementById('buy-step-1').style.display = 'block';
+    document.getElementById('buy-step-2').style.display = 'none';
+  };
+
+  window.copyWallet = function() {
+    const address = document.getElementById('usdt-wallet-address').innerText;
+    navigator.clipboard.writeText(address).then(() => {
+      alert('Адрес кошелька скопирован!');
+    });
+  };
+
+  // Submit Purchase to Bot API
+  window.submitPurchase = async function() {
+    const username = document.getElementById('buy-username').value.trim();
+    const fullname = document.getElementById('buy-fullname').value.trim();
+    const birthdate = document.getElementById('buy-birthdate').value;
+    const phone = document.getElementById('buy-phone').value.trim();
+    const email = document.getElementById('buy-email').value.trim();
+    const btn = document.getElementById('btn-submit-purchase');
+    
+    let progName = 'START';
+    let progPrice = 0;
+
+    if (selectedProgram === 'launch') {
+      progName = 'LAUNCH';
+      progPrice = 49900;
+    } else if (selectedProgram === 'restart') {
+      progName = 'RESTART';
+      progPrice = 39900;
+    } else if (selectedProgram === 'platform_pro') {
+      progName = 'PLATFORM PRO';
+      progPrice = 59900;
+    }
+
+    btn.disabled = true;
+    btn.innerText = 'Обработка...';
+
+    try {
+      const res = await fetch('https://arrival-lab-bot.vercel.app/api/public/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: username,
+          program_name: progName,
+          price: progPrice,
+          payment_method: selectedMethod,
+          full_name: fullname,
+          birth_date: birthdate || null,
+          phone: phone,
+          email: email
+        })
+      });
+
+      if (!res.ok) throw new Error('Network response not ok');
+      
+      // If free program, open SETUP.md
+      if (selectedProgram === 'start') {
+        window.open('https://raw.githubusercontent.com/GreMZaa/oriva-lab-bot/master/SETUP.md', '_blank');
+      }
+
+      document.getElementById('buy-step-2').style.display = 'none';
+      document.getElementById('buy-step-1').style.display = 'none';
+      document.getElementById('buy-success').style.display = 'block';
+    } catch (e) {
+      console.error(e);
+      alert('Произошла ошибка при отправке заказа. Пожалуйста, обратитесь в службу поддержки.');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Подтвердить заказ';
+    }
+  };
+
+  // Submit Application to Bot API
+  window.submitApplication = async function() {
+    const username = document.getElementById('agency-username').value.trim();
+    const fullname = document.getElementById('agency-fullname').value.trim();
+    const birthdate = document.getElementById('agency-birthdate').value;
+    const about = document.getElementById('agency-about').value.trim();
+    const btn = document.getElementById('btn-submit-agency');
+
+    let hasError = false;
+    
+    if (!username) {
+      document.getElementById('agency-username-error').style.display = 'block';
+      hasError = true;
+    } else {
+      document.getElementById('agency-username-error').style.display = 'none';
+    }
+
+    if (!fullname) {
+      document.getElementById('agency-fullname-error').style.display = 'block';
+      hasError = true;
+    } else {
+      document.getElementById('agency-fullname-error').style.display = 'none';
+    }
+
+    if (!about) {
+      document.getElementById('agency-about-error').style.display = 'block';
+      hasError = true;
+    } else {
+      document.getElementById('agency-about-error').style.display = 'none';
+    }
+
+    if (hasError) return;
+
+    btn.disabled = true;
+    btn.innerText = 'Отправка...';
+
+    try {
+      const res = await fetch('https://arrival-lab-bot.vercel.app/api/public/application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: username,
+          full_name: fullname,
+          birth_date: birthdate || null,
+          about: about
+        })
+      });
+
+      if (!res.ok) throw new Error('Network response not ok');
+
+      document.getElementById('agency-step-1').style.display = 'none';
+      document.getElementById('agency-success').style.display = 'block';
+    } catch (e) {
+      console.error(e);
+      alert('Произошла ошибка при отправке анкеты. Пожалуйста, обратитесь в службу поддержки.');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Отправить заявку';
+    }
+  };
+
+  // Intercept purchase/agency links and open modals
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    if (!href) return;
+
+    if (href.includes('t.me/ArrivalLabBOT?start=buy_')) {
+      e.preventDefault();
+      const programId = href.split('start=buy_')[1].split(/[&?#]/)[0];
+      window.openPurchaseModal(programId);
+    } else if (href.includes('t.me/ArrivalLabBOT?start=agency_apply')) {
+      e.preventDefault();
+      window.openAgencyModal();
+    } else if (href.includes('t.me/ArrivalLabBOT?start=download_start')) {
+      e.preventDefault();
+      window.openPurchaseModal('start');
+    } else if (href.includes('paywall.ru/arrivalab')) {
+      e.preventDefault();
+      window.openPurchaseModal('launch');
+    }
+  });
+</script>

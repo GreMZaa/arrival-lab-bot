@@ -1,0 +1,96 @@
+---
+---
+<section class="section stats-section">
+  <div class="container" data-reveal>
+    <div class="stats-grid">
+      <div class="stat-card glass">
+        <div class="stat-number">100%</div>
+        <div class="stat-title">Приватность</div>
+        <p class="stat-desc">Показывайте эмоции и общайтесь с аудиторией, полностью сохраняя анонимность лица и личных данных.</p>
+      </div>
+
+      <div class="stat-card glass">
+        <div class="stat-number">2.5X</div>
+        <div class="stat-title">Удержание аудитории</div>
+        <p class="stat-desc">Виртуальные персонажи вызывают повышенный интерактивный интерес и удерживают зрителей дольше.</p>
+      </div>
+
+      <div class="stat-card glass">
+        <div class="stat-number">150+</div>
+        <div class="stat-title">Готовых аватаров</div>
+        <p class="stat-desc">Широкий выбор стилей и концепций персонажей с полной лицензией на использование в рамках наших программ.</p>
+      </div>
+
+      <div class="stat-card glass">
+        <div class="stat-number">24/7</div>
+        <div class="stat-title">Поддержка</div>
+        <p class="stat-desc">От первого клика до настройки донатов и первого стрима с вами работает команда Oriva Lab.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .stats-section {
+    padding-block: var(--space-6);
+    z-index: 20;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+  }
+
+  .stat-card {
+    padding: var(--space-5);
+    border-radius: var(--radius-md) !important;
+    text-align: center;
+    transition: transform var(--dur-base) var(--ease-out-soft), box-shadow var(--dur-base) var(--ease-out-soft);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-soft);
+  }
+
+  .stat-number {
+    font-family: var(--font-display);
+    font-size: var(--fs-3xl);
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--space-2);
+    background: var(--gradient-soft);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-title {
+    font-size: var(--fs-base);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+  }
+
+  .stat-desc {
+    font-size: var(--fs-xs);
+    color: var(--color-text-soft);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 992px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-4);
+    }
+  }
+
+  @media (max-width: 576px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-3);
+    }
+  }
+</style>
