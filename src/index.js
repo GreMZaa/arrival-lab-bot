@@ -10,14 +10,21 @@ const startKeyboard = {
 
 const mainMenuKeyboard = {
   keyboard: [
-    [{ text: "🚀 Хочу всё настроить без технических сложностей" }],
-    [{ text: "🔞 Хочу работать на специализированных платформах (18+)" }],
-    [{ text: "⚙️ Хочу, чтобы вы всё настроили за меня" }],
-    [{ text: "🎥 Уже стримлю и хочу перейти в виртуальный формат" }],
-    [{ text: "🤝 Хочу работать с вашим агентством" }]
+    [{ text: "💎 Тарифы и программы" }],
+    [{ text: "👤 Личный кабинет" }, { text: "💬 Техподдержка" }]
   ],
   resize_keyboard: true,
-  one_time_keyboard: true
+  one_time_keyboard: false
+};
+
+const programsKeyboard = {
+  inline_keyboard: [
+    [{ text: "🚀 START (Бесплатно)", callback_data: "info_start" }],
+    [{ text: "⚙️ LAUNCH (Под ключ)", callback_data: "info_launch" }],
+    [{ text: "🔞 PLATFORM PRO (18+)", callback_data: "info_platform_pro" }],
+    [{ text: "🔄 RESTART (Переход)", callback_data: "info_restart" }],
+    [{ text: "🤝 ORIVA TALENTS (Агентство)", callback_data: "info_agency" }]
+  ]
 };
 
 const PROGRAMS = {
@@ -788,6 +795,90 @@ async function handleMessage(message, env, host) {
     return;
   }
   
+  if (text === "💎 Тарифы и программы") {
+    const msg = `💎 <b>Тарифы и программы Oriva Lab</b>\n\nВыберите интересующую вас программу ниже, чтобы узнать подробности и начать запуск:`;
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: telegramId,
+      text: msg,
+      parse_mode: "HTML",
+      reply_markup: programsKeyboard
+    });
+    return;
+  }
+  
+  if (text === "💬 Техподдержка") {
+    const msg = `💬 <b>Служба заботы Oriva Lab</b>\n\nВозникли вопросы по установке, настройке или оплате?\n\nНаш специалист поддержки на связи в Telegram:\n👉 <b>@success_vstream</b>\n\nНапишите нам, и мы поможем решить любой технический или организационный вопрос!`;
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: telegramId,
+      text: msg,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "💬 Написать в поддержку", url: "https://t.me/success_vstream" }],
+          [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
+        ]
+      }
+    });
+    return;
+  }
+  
+  if (text === "👤 Личный кабинет") {
+    const users = await dbQuery(env, "users", "GET", { "telegram_id": `eq.${telegramId}`, "limit": "1" });
+    if (users.length === 0) {
+      await sendTelegramRequest(env, "sendMessage", {
+        chat_id: telegramId,
+        text: "⚠️ Вы не зарегистрированы в системе. Нажмите /start, чтобы пройти регистрацию."
+      });
+      return;
+    }
+    const user = users[0];
+    
+    // Fetch orders and applications
+    const purchases = await dbQuery(env, "purchases", "GET", { "telegram_id": `eq.${telegramId}`, "order": "id.desc", "limit": "5" });
+    const apps = await dbQuery(env, "agency_applications", "GET", { "telegram_id": `eq.${telegramId}`, "order": "id.desc", "limit": "3" });
+    
+    let profileMsg = `👤 <b>Личный кабинет Oriva Lab</b>\n\n` +
+      `• Имя: <b>${user.first_name || 'не указано'}</b>\n` +
+      `• Telegram: @${user.username || 'не указан'}\n` +
+      `• Дата рождения: ${user.birth_date || 'не указана'}\n\n`;
+      
+    profileMsg += `💳 <b>Последние заказы:</b>\n`;
+    if (purchases.length === 0) {
+      profileMsg += "  <i>Заказов пока нет</i>\n\n";
+    } else {
+      purchases.forEach(p => {
+        const statusEmoji = p.status === 'approved' ? '✅ Оплачено' : p.status === 'rejected' ? '❌ Отклонено' : '🟡 В обработке';
+        profileMsg += `  • ${p.program_name}: <b>${p.price} ₽</b> (${statusEmoji})\n`;
+      });
+      profileMsg += "\n";
+    }
+    
+    profileMsg += `🤝 <b>Заявки в агентство:</b>\n`;
+    if (apps.length === 0) {
+      profileMsg += "  <i>Заявок пока нет</i>\n\n";
+    } else {
+      apps.forEach(a => {
+        const statusEmoji = a.status === 'approved' ? '✅ Принята' : a.status === 'rejected' ? '❌ Отклонена' : '🟡 На рассмотрении';
+        profileMsg += `  • Заявка от ${a.created_at ? a.created_at.substring(0, 10) : ''} (${statusEmoji})\n`;
+      });
+      profileMsg += "\n";
+    }
+    
+    const hostUrl = workerHost || "https://arival-lab.vercel.app";
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: telegramId,
+      text: profileMsg,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🖥 Открыть личный кабинет на сайте", web_app: { url: `${hostUrl}/personal-cabinet?tg_id=${telegramId}` } }],
+          [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
+        ]
+      }
+    });
+    return;
+  }
+
   if (BUTTON_TO_KEY[text]) {
     const programKey = BUTTON_TO_KEY[text];
     const programText = formatProgram(programKey);
@@ -1029,6 +1120,22 @@ async function handleCallbackQuery(callback, env, host) {
     return;
   }
   
+  if (data.startsWith("info_")) {
+    const programKey = data.substring(5);
+    if (PROGRAMS[programKey]) {
+      const programText = formatProgram(programKey);
+      await sendTelegramRequest(env, "editMessageText", {
+        chat_id: telegramId,
+        message_id: messageId,
+        text: programText,
+        parse_mode: "HTML",
+        reply_markup: programActions(programKey)
+      });
+    }
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+
   if (data.startsWith("buy_")) {
     const programKey = data.substring(4);
     if (!PROGRAMS[programKey]) {

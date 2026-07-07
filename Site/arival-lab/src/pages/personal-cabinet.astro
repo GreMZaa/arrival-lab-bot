@@ -1,0 +1,617 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<Layout title="Личный кабинет — Oriva Lab">
+  <Header />
+  
+  <main class="cabinet-main">
+    <div class="aurora-glow glow-1"></div>
+    <div class="aurora-glow glow-2"></div>
+    
+    <div class="container cabinet-container">
+      <!-- Welcome/Login Box -->
+      <div id="cabinet-login-box" class="cabinet-card glass" style="display: block;">
+        <h1 class="display cabinet-title">Личный кабинет</h1>
+        <p class="cabinet-subtitle">Введите ваши контактные данные для входа в кабинет Oriva Lab</p>
+        
+        <div class="login-form">
+          <div class="input-group">
+            <label for="input-identifier">Имя пользователя Telegram или Email</label>
+            <input type="text" id="input-identifier" placeholder="@username или client@example.com" />
+          </div>
+          
+          <button id="btn-cabinet-login" class="btn btn-primary login-btn">
+            <span>Войти</span>
+            <Icon name="arrow-right" size={16} />
+          </button>
+          
+          <p id="login-error" class="error-text" style="display: none;"></p>
+        </div>
+      </div>
+
+      <!-- Dashboard Box -->
+      <div id="cabinet-dashboard" class="cabinet-card glass" style="display: none;">
+        <div class="dashboard-header">
+          <div>
+            <span class="welcome-label">Добро пожаловать,</span>
+            <h2 id="user-display-name" class="user-name">-</h2>
+          </div>
+          <button id="btn-cabinet-logout" class="btn btn-ghost btn-sm">Выйти</button>
+        </div>
+
+        <div class="user-info-section">
+          <div class="info-row">
+            <span class="info-label">Telegram:</span>
+            <span id="info-tg" class="info-value">-</span>
+          </div>
+          <div class="info-row" id="row-birthdate" style="display: none;">
+            <span class="info-label">Дата рождения:</span>
+            <span id="info-birthdate" class="info-value">-</span>
+          </div>
+        </div>
+
+        <!-- Tab Selector -->
+        <div class="cabinet-tabs">
+          <button class="tab-btn active" data-tab="purchases">💳 Мои заказы</button>
+          <button class="tab-btn" data-tab="applications">🤝 Заявки в агентство</button>
+        </div>
+
+        <!-- Purchases Tab Content -->
+        <div id="tab-purchases-content" class="tab-panel active">
+          <div class="orders-list" id="purchases-list">
+            <div class="empty-state">У вас пока нет оформленных заказов.</div>
+          </div>
+        </div>
+
+        <!-- Applications Tab Content -->
+        <div id="tab-applications-content" class="tab-panel">
+          <div class="orders-list" id="applications-list">
+            <div class="empty-state">У вас пока нет поданных заявок.</div>
+          </div>
+        </div>
+
+        <!-- Footer support -->
+        <div class="cabinet-support-footer">
+          <p>Нужна техническая помощь или консультация?</p>
+          <a href="https://t.me/success_vstream" target="_blank" class="btn btn-ghost support-btn">
+            <span>💬 Связаться с поддержкой</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  const SUPABASE_URL = "https://vhwexymjfnsacwxzsgsl.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZod2V4eW1qZm5zYWN3eHpzZ3NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMTgwOTAsImV4cCI6MjA5ODc5NDA5MH0.i1RbqqyZ6Y6XnrKeG53KAc64oaciE-DDi9yQ7Ms3-C4";
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const loginBox = document.getElementById('cabinet-login-box');
+    const dashboard = document.getElementById('cabinet-dashboard');
+    const identifierInput = document.getElementById('input-identifier');
+    const loginBtn = document.getElementById('btn-cabinet-login');
+    const logoutBtn = document.getElementById('btn-cabinet-logout');
+    const errorText = document.getElementById('login-error');
+    
+    // Check if URL contains tg_id for auto-login (Telegram Web App)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tgId = urlParams.get('tg_id');
+    
+    if (tgId) {
+      autoLoginByTgId(tgId);
+    } else {
+      // Check if user is already logged in (saved username in localStorage)
+      const savedUser = localStorage.getItem('oriva_cabinet_username');
+      if (savedUser) {
+        identifierInput.value = savedUser;
+        performLogin(savedUser);
+      }
+    }
+
+    loginBtn.addEventListener('click', () => {
+      const val = identifierInput.value.trim();
+      if (!val) {
+        showError('Пожалуйста, введите имя пользователя или Email');
+        return;
+      }
+      performLogin(val);
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('oriva_cabinet_username');
+      loginBox.style.display = 'block';
+      dashboard.style.display = 'none';
+      if (errorText) errorText.style.display = 'none';
+    });
+
+    // Tab switching logic
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(`tab-${target}-content`).classList.add('active');
+      });
+    });
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorText.style.display = 'block';
+    }
+
+    async function autoLoginByTgId(telegramId) {
+      try {
+        const headers = {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        };
+        
+        const userRes = await fetch(`${SUPABASE_URL}/rest/v1/users?telegram_id=eq.${telegramId}&limit=1`, { headers });
+        if (!userRes.ok) throw new Error('Failed to query user');
+        
+        const users = await userRes.json();
+        if (users.length === 0) {
+          // If tg_id is not registered, show login normally
+          return;
+        }
+        
+        renderUserDashboard(users[0], telegramId);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function performLogin(identifier) {
+      try {
+        if (errorText) errorText.style.display = 'none';
+        loginBtn.disabled = true;
+        loginBtn.querySelector('span').textContent = 'Вход...';
+        
+        const cleanId = identifier.replace(/^@/, '').trim().toLowerCase();
+        const headers = {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        };
+        
+        // Search by username or email inside name
+        let queryUrl = `${SUPABASE_URL}/rest/v1/users?username=eq.${cleanId}&limit=1`;
+        if (cleanId.includes('@')) {
+          // It's an email, let's search if first_name contains email
+          queryUrl = `${SUPABASE_URL}/rest/v1/users?first_name=ilike.*${cleanId}*&limit=1`;
+        }
+        
+        const userRes = await fetch(queryUrl, { headers });
+        if (!userRes.ok) throw new Error('Database connection failed');
+        
+        const users = await userRes.json();
+        if (users.length === 0) {
+          showError('Пользователь с такими данными не найден. Проверьте правильность ввода или запустите регистрацию в боте.');
+          loginBtn.disabled = false;
+          loginBtn.querySelector('span').textContent = 'Войти';
+          return;
+        }
+        
+        const user = users[0];
+        localStorage.setItem('oriva_cabinet_username', identifier);
+        
+        renderUserDashboard(user, user.telegram_id);
+      } catch (err) {
+        showError('Не удалось выполнить вход: ' + err.message);
+        loginBtn.disabled = false;
+        loginBtn.querySelector('span').textContent = 'Войти';
+      }
+    }
+
+    async function renderUserDashboard(user, telegramId) {
+      loginBox.style.display = 'none';
+      dashboard.style.display = 'block';
+      
+      // Parse FIO (FIO phone email)
+      const name = user.first_name || 'Пользователь';
+      document.getElementById('user-display-name').textContent = name.split('(')[0].trim();
+      document.getElementById('info-tg').textContent = user.username ? '@' + user.username : 'не привязан';
+      
+      if (user.birth_date) {
+        document.getElementById('info-birthdate').textContent = user.birth_date;
+        document.getElementById('row-birthdate').style.display = 'flex';
+      }
+
+      loginBtn.disabled = false;
+      loginBtn.querySelector('span').textContent = 'Войти';
+      
+      // Fetch user's orders and applications
+      fetchPurchases(telegramId, user.id);
+      fetchApplications(telegramId, user.id);
+    }
+
+    async function fetchPurchases(telegramId, userId) {
+      try {
+        const headers = {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        };
+        
+        // Match either by telegram_id or user_id
+        let queryUrl = `${SUPABASE_URL}/rest/v1/purchases?telegram_id=eq.${telegramId}&order=id.desc`;
+        if (userId) {
+          queryUrl = `${SUPABASE_URL}/rest/v1/purchases?or=(telegram_id.eq.${telegramId},user_id.eq.${userId})&order=id.desc`;
+        }
+        
+        const res = await fetch(queryUrl, { headers });
+        if (!res.ok) throw new Error();
+        const purchases = await res.json();
+        
+        const container = document.getElementById('purchases-list');
+        if (purchases.length === 0) {
+          container.innerHTML = `<div class="empty-state">У вас пока нет оформленных заказов.</div>`;
+          return;
+        }
+        
+        let html = '';
+        purchases.forEach(p => {
+          const statusClass = p.status === 'approved' ? 'status-approved' : p.status === 'rejected' ? 'status-rejected' : 'status-pending';
+          const statusText = p.status === 'approved' ? 'Оплачено' : p.status === 'rejected' ? 'Отклонено' : 'В обработке';
+          
+          html += `
+            <div class="order-item glass">
+              <div class="order-info">
+                <span class="order-title">${p.program_name}</span>
+                <span class="order-price">${p.price} ₽</span>
+              </div>
+              <span class="order-status-badge ${statusClass}">${statusText}</span>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (e) {
+        document.getElementById('purchases-list').innerHTML = `<div class="error-text">Не удалось загрузить историю заказов.</div>`;
+      }
+    }
+
+    async function fetchApplications(telegramId, userId) {
+      try {
+        const headers = {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        };
+        
+        let queryUrl = `${SUPABASE_URL}/rest/v1/agency_applications?telegram_id=eq.${telegramId}&order=id.desc`;
+        if (userId) {
+          queryUrl = `${SUPABASE_URL}/rest/v1/agency_applications?or=(telegram_id.eq.${telegramId},user_id.eq.${userId})&order=id.desc`;
+        }
+        
+        const res = await fetch(queryUrl, { headers });
+        if (!res.ok) throw new Error();
+        const apps = await res.json();
+        
+        const container = document.getElementById('applications-list');
+        if (apps.length === 0) {
+          container.innerHTML = `<div class="empty-state">У вас пока нет поданных заявок.</div>`;
+          return;
+        }
+        
+        let html = '';
+        apps.forEach(a => {
+          const statusClass = a.status === 'approved' ? 'status-approved' : a.status === 'rejected' ? 'status-rejected' : 'status-pending';
+          const statusText = a.status === 'approved' ? 'Принята' : a.status === 'rejected' ? 'Отклонена' : 'На рассмотрении';
+          const dateStr = a.created_at ? a.created_at.substring(0, 10).split('-').reverse().join('.') : '';
+          
+          html += `
+            <div class="order-item glass">
+              <div class="order-info">
+                <span class="order-title">Заявка Oriva Talents</span>
+                <span class="order-price">Подана: ${dateStr}</span>
+              </div>
+              <span class="order-status-badge ${statusClass}">${statusText}</span>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (e) {
+        document.getElementById('applications-list').innerHTML = `<div class="error-text">Не удалось загрузить историю заявок.</div>`;
+      }
+    }
+  });
+</script>
+
+<style>
+  .cabinet-main {
+    padding-block-start: calc(var(--header-h) + var(--space-8));
+    padding-block-end: var(--space-10);
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+  }
+
+  .cabinet-container {
+    max-width: 600px;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+  }
+
+  .cabinet-card {
+    padding: var(--space-8) var(--space-7);
+    border-radius: 28px !important;
+    background: var(--color-surface);
+  }
+
+  .cabinet-title {
+    font-size: var(--fs-2xl);
+    font-weight: 800;
+    margin-bottom: var(--space-2);
+    background: var(--gradient-soft);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+  }
+
+  .cabinet-subtitle {
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    line-height: 1.6;
+    margin-bottom: var(--space-7);
+    text-align: center;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .input-group label {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--color-text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .input-group input {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--color-text);
+    font-size: var(--fs-sm);
+    outline: none;
+    transition: all var(--dur-fast);
+  }
+
+  .input-group input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(95, 0, 245, 0.15);
+  }
+
+  .login-btn {
+    width: 100%;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .error-text {
+    font-size: var(--fs-xs);
+    color: #ef4444;
+    text-align: center;
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  /* Dashboard CSS */
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+
+  .welcome-label {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+  }
+
+  .user-name {
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .user-info-section {
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 14px;
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--fs-sm);
+  }
+
+  .info-label {
+    color: var(--color-text-muted);
+  }
+
+  .info-value {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .cabinet-tabs {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 2px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    padding-bottom: var(--space-3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all var(--dur-fast);
+  }
+
+  .tab-btn.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-height: 120px;
+  }
+
+  .order-item {
+    padding: var(--space-4);
+    border-radius: 16px !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.01);
+  }
+
+  .order-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+  }
+
+  .order-title {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .order-price {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+  }
+
+  .order-status-badge {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 20px;
+  }
+
+  .status-approved {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+
+  .status-rejected {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+
+  .status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--fs-sm);
+    padding: var(--space-6) 0;
+  }
+
+  .cabinet-support-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: var(--space-5);
+    margin-top: var(--space-7);
+    text-align: center;
+  }
+
+  .cabinet-support-footer p {
+    font-size: var(--fs-xs);
+    color: var(--color-text-soft);
+    margin-bottom: var(--space-3);
+  }
+
+  .support-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .aurora-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.15;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .glow-1 {
+    width: 350px;
+    height: 350px;
+    background: #d8b4fe;
+    top: 10%;
+    left: -50px;
+  }
+
+  .glow-2 {
+    width: 400px;
+    height: 400px;
+    background: #f9a8d4;
+    bottom: 10%;
+    right: -50px;
+  }
+
+  @media (max-width: 768px) {
+    .cabinet-card {
+      padding: var(--space-6) var(--space-4);
+      border-radius: 20px !important;
+    }
+    .cabinet-title {
+      font-size: var(--fs-xl);
+    }
+  }
+</style>
