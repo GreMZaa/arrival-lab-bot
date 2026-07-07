@@ -1644,6 +1644,163 @@ async function handlePublicApplication(request, env) {
   }
 }
 
+async function handlePaywallWebhook(request, env) {
+  try {
+    const payload = await request.json();
+    console.log("Paywall webhook payload:", JSON.stringify(payload));
+
+    // Paywall typically sends payment status in 'status' or 'event'
+    // For example: status: 'paid' or status: 'success'
+    const status = payload.status || payload.event || "";
+    const isPaid = status === "paid" || status === "success" || status === "payment.success" || status === "subscription.created";
+    
+    if (!isPaid) {
+      return new Response(JSON.stringify({ message: "Ignored non-success event", status }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    // Try to extract user identifiers
+    const email = (payload.email || (payload.user && payload.user.email) || "").trim().toLowerCase();
+    const phone = (payload.phone || (payload.user && payload.user.phone) || "").trim();
+    const telegramUsername = (payload.telegram_username || payload.username || (payload.user && payload.user.username) || "").replace(/^@/, "").trim().toLowerCase();
+    const telegramId = payload.telegram_id || payload.tg_id || (payload.user && payload.user.telegram_id) || null;
+
+    // Search for a matching purchase in the database
+    let matchedPurchase = null;
+
+    if (telegramId) {
+      const purchases = await dbQuery(env, "purchases", "GET", { "telegram_id": `eq.${telegramId}`, "status": "eq.pending" });
+      if (purchases.length > 0) matchedPurchase = purchases[0];
+    }
+
+    if (!matchedPurchase && telegramUsername) {
+      // Find user by username
+      const users = await dbQuery(env, "users", "GET", { "username": `eq.${telegramUsername}` });
+      if (users.length > 0) {
+        const userIds = users.map(u => u.id);
+        // Find pending purchases for these users
+        for (const uId of userIds) {
+          const purchases = await dbQuery(env, "purchases", "GET", { "user_id": `eq.${uId}`, "status": "eq.pending" });
+          if (purchases.length > 0) {
+            matchedPurchase = purchases[0];
+            break;
+          }
+        }
+      }
+    }
+
+    if (!matchedPurchase && (email || phone)) {
+      // Search users where name/first_name contains email or phone
+      const allUsers = await dbQuery(env, "users", "GET", {});
+      const matchingUsers = allUsers.filter(u => {
+        const name = (u.first_name || "").toLowerCase();
+        return (email && name.includes(email)) || (phone && name.includes(phone));
+      });
+
+      if (matchingUsers.length > 0) {
+        for (const u of matchingUsers) {
+          const purchases = await dbQuery(env, "purchases", "GET", { "user_id": `eq.${u.id}`, "status": "eq.pending" });
+          if (purchases.length > 0) {
+            matchedPurchase = purchases[0];
+            break;
+          }
+        }
+      }
+    }
+
+    let purchaseId = null;
+    let programName = "LAUNCH";
+    let finalTgId = telegramId;
+
+    if (matchedPurchase) {
+      purchaseId = matchedPurchase.id;
+      programName = matchedPurchase.program_name;
+      finalTgId = matchedPurchase.telegram_id;
+      // Update status in Supabase to approved
+      await dbQuery(env, "purchases", "PATCH", { id: `eq.${purchaseId}` }, { status: "approved" });
+    } else {
+      // Create a fallback purchase if no pending match was found
+      let userId = null;
+      if (telegramUsername) {
+        const users = await dbQuery(env, "users", "GET", { "username": `eq.${telegramUsername}`, "limit": "1" });
+        if (users.length > 0) {
+          userId = users[0].id;
+          if (!finalTgId) finalTgId = users[0].telegram_id;
+        }
+      }
+      
+      if (!finalTgId) {
+        finalTgId = -Math.floor(Math.random() * 1000000000) - 100000000;
+      }
+
+      if (!userId) {
+        const name = `Paywall Client (${phone || 'no phone'}, ${email || 'no email'})`;
+        const newUser = await saveUser(env, finalTgId, telegramUsername || `paywall_${Date.now()}`, name, null);
+        userId = newUser.id;
+      }
+
+      const newPurchase = await dbQuery(env, "purchases", "POST", {}, {
+        user_id: userId,
+        telegram_id: finalTgId,
+        program_name: "LAUNCH (Paywall)",
+        price: payload.amount || 49900,
+        status: "approved"
+      });
+      if (newPurchase.length > 0) purchaseId = newPurchase[0].id;
+    }
+
+    // Log to site_events table
+    await dbQuery(env, "site_events", "POST", {}, {
+      session_id: payload.session_id || `paywall_sess_${Date.now()}`,
+      event_type: "purchase_success",
+      details: {
+        paywall: true,
+        program_name: programName,
+        email: email,
+        phone: phone,
+        purchase_id: purchaseId
+      }
+    }).catch(() => {});
+
+    // Notify admin
+    const adminMsg = `💳 <b>Оплата через Paywall получена!</b>\n\n` +
+      `🔹 Программа: <b>${programName}</b>\n` +
+      `🔹 Статус: <b>Оплачено (Approved)</b>\n` +
+      `🔹 Email: <b>${email || 'не указан'}</b>\n` +
+      `🔹 Телефон: <b>${phone || 'не указан'}</b>\n` +
+      `🔹 Telegram: @${telegramUsername || 'не указан'} (ID: <code>${finalTgId}</code>)`;
+
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: env.ADMIN_CHAT_ID,
+      text: adminMsg,
+      parse_mode: "HTML"
+    }).catch(() => {});
+
+    // Notify user in Telegram if valid ID
+    if (finalTgId && finalTgId > 0) {
+      const userMsg = `🎉 <b>Спасибо за оплату!</b>\n\nМы получили ваш платёж через Paywall за программу <b>${programName}</b>.\n\nВ ближайшее время специалист Oriva Lab свяжется с вами в Telegram и предоставит дальнейшие инструкции.`;
+      await sendTelegramRequest(env, "sendMessage", {
+        chat_id: finalTgId,
+        text: userMsg,
+        parse_mode: "HTML"
+      }).catch(() => {});
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  } catch (err) {
+    console.error("Paywall Webhook Error:", err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
 // ── Cloudflare Worker Fetch Handler ──────────────────────
 
 export default {
@@ -1681,6 +1838,10 @@ export default {
     
     if (url.pathname === "/api/public/application") {
       return await handlePublicApplication(request, env);
+    }
+
+    if (url.pathname === "/api/public/paywall-webhook") {
+      return await handlePaywallWebhook(request, env);
     }
     
     // CORS options

@@ -1,0 +1,270 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<Layout title="Успешная оплата — Oriva Lab">
+  <Header />
+  
+  <main class="success-main">
+    <div class="aurora-glow glow-1"></div>
+    <div class="aurora-glow glow-2"></div>
+    
+    <div class="container success-container">
+      <div class="success-card glass">
+        <div class="check-icon-container">
+          <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <circle class="check-circle" cx="26" cy="26" r="25" fill="none"/>
+            <path class="check-path" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+          </svg>
+        </div>
+
+        <h1 class="display success-title">Оплата успешно проведена!</h1>
+        <p class="success-desc">Благодарим за приобретение программы Oriva Lab. Ваш заказ успешно подтвержден платежной системой.</p>
+
+        <div class="next-steps-card">
+          <h3>Что произойдет дальше?</h3>
+          <ul class="steps-list">
+            <li>
+              <span class="step-num">1</span>
+              <div>
+                <strong>Подтверждение заказа</strong>
+                <p>Платформа Paywall в течение нескольких минут передаст информацию о вашем платеже в наш бот и CRM-систему.</p>
+              </div>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <div>
+                <strong>Связь с куратором</strong>
+                <p>Наш технический специалист свяжется с вами в Telegram (по указанному имени пользователя) в течение дня для составления графика настройки.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <a href="/" class="btn btn-primary back-home-btn">
+          <span>На главную страницу</span>
+          <Icon name="arrow-right" size={16} />
+        </a>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  // Fire conversion logs to GA4 and Supabase on success page load
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1. Log conversion locally to site_events if possible
+    const sessId = localStorage.getItem('oriva_session_id') || 'sess_' + Date.now();
+    const abVariant = localStorage.getItem('oriva_ab_variant') || 'A';
+    
+    // Log conversion event
+    if (window.trackEvent) {
+      window.trackEvent('paywall_success_page_view', {
+        session_id: sessId,
+        ab_variant: abVariant,
+        source: 'paywall_redirect'
+      });
+    }
+  });
+</script>
+
+<style>
+  .success-main {
+    padding-block-start: calc(var(--header-h) + var(--space-8));
+    padding-block-end: var(--space-10);
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+  }
+
+  .success-container {
+    max-width: 600px;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+  }
+
+  .success-card {
+    padding: var(--space-8) var(--space-7);
+    border-radius: 28px !important;
+    background: var(--color-surface);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Animated Checkmark CSS */
+  .check-icon-container {
+    width: 80px;
+    height: 80px;
+    margin-bottom: var(--space-5);
+  }
+
+  .check-icon {
+    width: 80px;
+    height: 80px;
+    display: block;
+    stroke-width: 3;
+    stroke: #10b981;
+    stroke-miterlimit: 10;
+    box-shadow: inset 0px 0px 0px #10b981;
+    animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s dashed;
+    border-radius: 50%;
+  }
+
+  .check-circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    stroke-width: 3;
+    stroke-miterlimit: 10;
+    stroke: #10b981;
+    fill: none;
+    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+  }
+
+  .check-path {
+    transform-origin: 50% 50%;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+  }
+
+  @keyframes stroke {
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes fill {
+    100% {
+      box-shadow: inset 0px 0px 0px 40px rgba(16, 185, 129, 0.1);
+    }
+  }
+
+  .success-title {
+    font-size: var(--fs-2xl);
+    font-weight: 800;
+    margin-bottom: var(--space-3);
+    background: var(--gradient-soft);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .success-desc {
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    line-height: 1.6;
+    max-width: 480px;
+    margin-bottom: var(--space-6);
+  }
+
+  .next-steps-card {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    padding: var(--space-5);
+    text-align: left;
+    margin-bottom: var(--space-6);
+  }
+
+  .next-steps-card h3 {
+    font-size: var(--fs-base);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-4);
+  }
+
+  .steps-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .steps-list li {
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+  }
+
+  .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(95, 0, 245, 0.15);
+    color: var(--color-primary);
+    font-weight: 700;
+    font-size: var(--fs-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .steps-list strong {
+    font-size: var(--fs-sm);
+    color: var(--color-text);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .steps-list p {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .back-home-btn {
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .aurora-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.15;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .glow-1 {
+    width: 350px;
+    height: 350px;
+    background: #d8b4fe;
+    top: 10%;
+    left: -50px;
+  }
+
+  .glow-2 {
+    width: 400px;
+    height: 400px;
+    background: #f9a8d4;
+    bottom: 10%;
+    right: -50px;
+  }
+
+  @media (max-width: 768px) {
+    .success-card {
+      padding: var(--space-6) var(--space-4);
+      border-radius: 20px !important;
+    }
+    .success-title {
+      font-size: var(--fs-xl);
+    }
+  }
+</style>
