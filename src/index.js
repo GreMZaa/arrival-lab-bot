@@ -1646,13 +1646,26 @@ async function handlePublicApplication(request, env) {
 
 async function handlePaywallWebhook(request, env) {
   try {
-    const payload = await request.json();
-    console.log("Paywall webhook payload:", JSON.stringify(payload));
+    const rawText = await request.text();
+    console.log("Raw Paywall payload:", rawText);
+    
+    let payload = {};
+    const contentType = request.headers.get("content-type") || "";
+    if (contentType.includes("form-urlencoded") || rawText.includes("clickid=")) {
+      const params = new URLSearchParams(rawText);
+      payload = Object.fromEntries(params.entries());
+    } else {
+      try {
+        payload = JSON.parse(rawText);
+      } catch (e) {
+        const params = new URLSearchParams(rawText);
+        payload = Object.fromEntries(params.entries());
+      }
+    }
+    console.log("Parsed Paywall payload:", JSON.stringify(payload));
 
-    // Paywall typically sends payment status in 'status' or 'event'
-    // For example: status: 'paid' or status: 'success'
     const status = payload.status || payload.event || "";
-    const isPaid = status === "paid" || status === "success" || status === "payment.success" || status === "subscription.created";
+    const isPaid = status === "paid" || status === "success" || status === "payment.success" || status === "subscription.created" || status === "Firstbill" || status.toLowerCase().includes("bill");
     
     if (!isPaid) {
       return new Response(JSON.stringify({ message: "Ignored non-success event", status }), {
