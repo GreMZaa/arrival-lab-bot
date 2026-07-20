@@ -34,7 +34,6 @@ const programsList = getProgramsInDisplayOrder();
 
           <div class="action-container">
             <a href={p.ctaHref} class={`btn btn-full ${p.popular ? 'btn-primary btn-glowing' : 'btn-ghost'}`}>
-              {p.id === 'start' && <Icon name="download" size={16} />}
               {p.id === 'talents' && <Icon name="file-text" size={16} />}
               {p.cta}
             </a>
@@ -43,12 +42,15 @@ const programsList = getProgramsInDisplayOrder();
           <div class="features-wrapper">
             <div class="features-header-text">{p.featuresHeader}</div>
             <ul class="program-features">
-              {p.features.map((f) => (
-                <li>
-                  <span class="bullet-dot"></span>
-                  <span>{f}</span>
-                </li>
-              ))}
+              {p.features.map((f) => {
+                const hasEmoji = /^[✅❌🟢🔵🟣]/.test(f);
+                return (
+                  <li>
+                    {!hasEmoji && <span class="bullet-dot"></span>}
+                    <span>{f}</span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

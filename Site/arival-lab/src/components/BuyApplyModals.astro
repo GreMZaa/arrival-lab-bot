@@ -1,6 +1,13 @@
 ---
 // Premium Buy & Apply Modals for Oriva Lab Website
+import { getProgramsInDisplayOrder } from '../data/programs';
+const programsList = getProgramsInDisplayOrder();
 ---
+
+<!-- Inject programs data for client-side use -->
+<script is:inline type="application/json" id="programs-data-json">
+  {JSON.stringify(programsList.map(p => ({ id: p.id, title: p.title, price: p.price, priceAmount: p.priceAmount })))}
+</script>
 
 <!-- Modal Root Container -->
 <div id="modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; align-items: center; justify-content: center; font-family: 'Inter', -apple-system, sans-serif; box-sizing: border-box; padding: 16px;">
@@ -215,6 +222,7 @@
 </div>
 
 <script is:inline>
+  const programsData = JSON.parse(document.getElementById('programs-data-json').textContent);
   let selectedProgram = null;
   let selectedMethod = 'card';
 
@@ -239,25 +247,22 @@
     let titleText = 'Купить программу';
     let subtitleText = 'Оформление заказа';
     
-    if (programId === 'start') {
-      titleText = 'Скачать программу START';
-      subtitleText = 'Регистрация бесплатного доступа';
-    } else if (programId === 'launch') {
-      titleText = 'Купить программу LAUNCH';
-      subtitleText = 'Под ключ за 49 900 ₽';
-    } else if (programId === 'restart') {
-      titleText = 'Купить программу RESTART';
-      subtitleText = 'Переход на виртуальный формат за 39 900 ₽';
-    } else if (programId === 'platform_pro') {
-      titleText = 'Купить программу PLATFORM PRO';
-      subtitleText = 'Специализированные площадки от 59 900 ₽';
+    const program = programsData.find(p => p.id === programId);
+    if (program) {
+      if (program.priceAmount === 0) {
+        titleText = `Скачать ${program.title}`;
+        subtitleText = `Регистрация бесплатного доступа`;
+      } else {
+        titleText = `Купить ${program.title}`;
+        subtitleText = `Оформление заказа за ${program.price}`;
+      }
     }
 
     document.getElementById('buy-title').innerText = titleText;
     document.getElementById('buy-subtitle').innerText = subtitleText;
 
     // Adjust step view based on program
-    if (programId === 'start') {
+    if (program && program.priceAmount === 0) {
       document.getElementById('payment-methods-section').style.display = 'none';
       document.getElementById('btn-buy-next').innerText = 'Зарегистрировать и скачать';
     } else {
@@ -417,19 +422,9 @@
     const email = document.getElementById('buy-email').value.trim();
     const btn = document.getElementById('btn-submit-purchase');
     
-    let progName = 'START';
-    let progPrice = 0;
-
-    if (selectedProgram === 'launch') {
-      progName = 'LAUNCH';
-      progPrice = 49900;
-    } else if (selectedProgram === 'restart') {
-      progName = 'RESTART';
-      progPrice = 39900;
-    } else if (selectedProgram === 'platform_pro') {
-      progName = 'PLATFORM PRO';
-      progPrice = 59900;
-    }
+    const program = programsData.find(p => p.id === selectedProgram);
+    let progName = program ? program.title : 'START';
+    let progPrice = program ? (program.priceAmount ?? 0) : 0;
 
     btn.disabled = true;
     btn.innerText = 'Обработка...';
@@ -464,7 +459,7 @@
       }
       
       // If free program, open SETUP.md
-      if (selectedProgram === 'start') {
+      if (program && program.priceAmount === 0) {
         window.open('https://raw.githubusercontent.com/GreMZaa/oriva-lab-bot/master/SETUP.md', '_blank');
       } else if (selectedMethod === 'card') {
         // Open Paywall link automatically
@@ -570,10 +565,11 @@
       window.openAgencyModal();
     } else if (href.includes('t.me/ArrivalLabBOT?start=download_start')) {
       e.preventDefault();
-      window.openPurchaseModal('start');
+      window.openPurchaseModal('archive_002_basic');
     } else if (href.includes('paywall.ru/arrivalab')) {
       e.preventDefault();
-      window.openPurchaseModal('launch');
+      const defaultPaid = programsData.find(p => p.priceAmount > 0);
+      window.openPurchaseModal(defaultPaid ? defaultPaid.id : 'archive_002_premium');
     }
   });
 </script>

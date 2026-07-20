@@ -15,18 +15,22 @@ router = Router()
 
 # Маппинг program_key → название для хранения
 KEY_TO_NAME = {
-    "start": "START",
-    "platform_pro": "PLATFORM PRO",
-    "launch": "LAUNCH",
-    "restart": "RESTART",
+    "archive_002_basic": "АРХИВ 002 — базовый",
+    "archive_002_2d": "АРХИВ 002 + 2D",
+    "archive_002_3d": "АРХИВ 002 + 3D",
+    "archive_002_premium": "АРХИВ 002 PREMIUM",
+    "archive_003": "АРХИВ 003",
+    "archive_004": "АРХИВ 004 — РЕСТАРТ",
 }
 
 # Маппинг program_key → цена (число для БД)
 KEY_TO_PRICE = {
-    "start": 14990,
-    "platform_pro": 59900,
-    "launch": 49900,
-    "restart": 39900,
+    "archive_002_basic": 14900,
+    "archive_002_2d": 29900,
+    "archive_002_3d": 34900,
+    "archive_002_premium": 49900,
+    "archive_003": 59900,
+    "archive_004": 39900,
 }
 
 
