@@ -45,6 +45,17 @@ async def main():
     dp.include_router(payment_router)
     dp.include_router(agency_router)
 
+    # Установка команд в меню
+    from aiogram.types import BotCommand
+    try:
+        await bot.set_my_commands([
+            BotCommand(command="start", description="Запустить бота"),
+            BotCommand(command="help", description="Служба поддержки"),
+            BotCommand(command="legal", description="Правовые документы"),
+        ])
+    except Exception as e:
+        logger.error(f"Не удалось установить команды меню: {e}")
+
     # Глобальный обработчик ошибок
     @dp.errors()
     async def global_error_handler(event: AiogramError, bot: Bot):
