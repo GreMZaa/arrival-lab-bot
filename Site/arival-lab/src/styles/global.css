@@ -226,6 +226,17 @@ body::after {
   background-position: 100% 50%;
   box-shadow: 0 12px 36px rgba(59, 130, 246, 0.35);
 }
+.btn-green {
+  background: #a3e635;
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 8px 25px rgba(163, 230, 53, 0.3);
+}
+.btn-green:hover {
+  transform: translateY(-2px);
+  background: #94d82d;
+  box-shadow: 0 12px 32px rgba(163, 230, 53, 0.45);
+}
 .btn-ghost {
   background: rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(12px);
