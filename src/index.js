@@ -10,8 +10,8 @@ const startKeyboard = {
 
 const mainMenuKeyboard = {
   keyboard: [
-    [{ text: "🔮 Подобрать программу (Квиз)" }],
-    [{ text: "💎 Тарифы и программы" }],
+    [{ text: "✨ Подобрать образ" }],
+    [{ text: "💎 Тарифы и цены" }],
     [{ text: "👤 Личный кабинет" }, { text: "💬 Техподдержка" }]
   ],
   resize_keyboard: true,
@@ -19,7 +19,7 @@ const mainMenuKeyboard = {
 };
 
 const QUIZ_STEP_1 = {
-  text: "🔮 <b>Подбор программы — Шаг 1 из 4</b>\n\nКаков ваш текущий статус в стриминге?",
+  text: "✨ <b>Подобрать образ — Шаг 1 из 4</b>\n\nКаков ваш текущий статус в стриминге?",
   reply_markup: {
     inline_keyboard: [
       [{ text: "🆕 Я только начинаю (запуск с нуля)", callback_data: "quiz_ans_exp_new" }],
@@ -29,7 +29,7 @@ const QUIZ_STEP_1 = {
 };
 
 const QUIZ_STEP_2 = {
-  text: "🔮 <b>Подбор программы — Шаг 2 из 4</b>\n\nНа каких платформах вы планируете стримить?",
+  text: "✨ <b>Подобрать образ — Шаг 2 из 4</b>\n\nНа каких платформах вы планируете стримить?",
   reply_markup: {
     inline_keyboard: [
       [{ text: "🌐 Популярные (YouTube, Twitch, Kick, VK)", callback_data: "quiz_ans_goal_public" }],
@@ -39,18 +39,18 @@ const QUIZ_STEP_2 = {
 };
 
 const QUIZ_STEP_3 = {
-  text: "🔮 <b>Подбор программы — Шаг 3 из 4</b>\n\nКакая модель персонажа вас интересует?",
+  text: "✨ <b>Подобрать образ — Шаг 3 из 4</b>\n\nКакая модель персонажа вас интересует?",
   reply_markup: {
     inline_keyboard: [
-      [{ text: "📄 Без модели (только инструкции)", callback_data: "quiz_ans_budget_none" }],
-      [{ text: "🎨 2D Live2D модель (аниме-стиль)", callback_data: "quiz_ans_budget_2d" }],
-      [{ text: "🧊 3D VRM модель (3D-трекинг)", callback_data: "quiz_ans_budget_3d" }]
+      [{ text: "📄 Без модели (только пошаговые инструкции)", callback_data: "quiz_ans_budget_none" }],
+      [{ text: "🎨 2D Live2D модель (аниме-стиль со скидкой 50%)", callback_data: "quiz_ans_budget_2d" }],
+      [{ text: "🧊 3D VRM модель (3D-трекинг со скидкой 50%)", callback_data: "quiz_ans_budget_3d" }]
     ]
   }
 };
 
 const QUIZ_STEP_4 = {
-  text: "🔮 <b>Подбор программы — Шаг 4 из 4</b>\n\nНужна ли вам личная помощь в настройке?",
+  text: "✨ <b>Подобрать образ — Шаг 4 из 4</b>\n\nНужна ли вам личная помощь в настройке?",
   reply_markup: {
     inline_keyboard: [
       [{ text: "📖 Настрою всё сам по инструкциям", callback_data: "quiz_ans_hardware_self" }],
@@ -59,14 +59,41 @@ const QUIZ_STEP_4 = {
   }
 };
 
+const TARIFFS_SUMMARY_TEXT = `💎 <b>Наши тарифы и услуги Oriva Lab</b>
+
+Каждая программа содержит подробное пошаговое руководство, поддержку и бонусы:
+
+🟢 <b>АРХИВ 002 — базовый</b> — <code>14 900 ₽</code>
+<i>Пошаговое руководство по самостоятельному запуску VTuber-аватара с нуля.</i>
+
+🔵 <b>АРХИВ 002 + 2D</b> — <code>29 900 ₽</code>
+<i>Базовый архив + разработка персонального 2D-аватара со скидкой 50%.</i>
+
+🔵 <b>АРХИВ 002 + 3D</b> — <code>34 900 ₽</code>
+<i>Базовый архив + создание 3D/VRM модели персонажа со скидкой 50%.</i>
+
+🟣 <b>АРХИВ 002 PREMIUM</b> — <code>49 900 ₽</code>
+<i>Личное сопровождение до первого эфира + 2D или 3D модель в подарок.</i>
+
+🔄 <b>АРХИВ 004 — РЕСТАРТ</b> — <code>39 900 ₽</code>
+<i>Пошаговый переход с веб-камеры на виртуальный формат без потери аудитории.</i>
+
+🔞 <b>АРХИВ 003</b> — <code>от 59 900 ₽</code>
+<i>Специализированный запуск на анонимных и 18+ площадках с защитой приватности.</i>
+
+🤝 <b>Работать с нами</b> — <code>15% от дохода</code>
+<i>Агентская программа: даём полную программу, подбираем модель и прописываем персонажа.</i>
+
+Нажмите кнопку программы ниже, чтобы открыть полное описание и сделать заказ:`;
+
 const programsKeyboard = {
   inline_keyboard: [
     [{ text: "🟢 АРХИВ 002 — базовый (14 900 ₽)", callback_data: "info_archive_002_basic" }],
     [{ text: "🔵 АРХИВ 002 + 2D (29 900 ₽)", callback_data: "info_archive_002_2d" }],
     [{ text: "🔵 АРХИВ 002 + 3D (34 900 ₽)", callback_data: "info_archive_002_3d" }],
     [{ text: "🟣 АРХИВ 002 PREMIUM (49 900 ₽)", callback_data: "info_archive_002_premium" }],
-    [{ text: "🔞 АРХИВ 003 (от 59 900 ₽)", callback_data: "info_archive_003" }],
     [{ text: "🔄 АРХИВ 004 — РЕСТАРТ (39 900 ₽)", callback_data: "info_archive_004" }],
+    [{ text: "🔞 АРХИВ 003 (от 59 900 ₽)", callback_data: "info_archive_003" }],
     [{ text: "🤝 Работать с нами (15% от дохода)", callback_data: "info_agency" }]
   ]
 };
@@ -860,10 +887,14 @@ async function handleMessage(message, env, host) {
   }
   
   if (
+    text === "✨ Подобрать образ" ||
     text === "🔮 Подобрать программу (Квиз)" ||
     text === "/quiz" ||
-    text.includes("Квиз") ||
     text.includes("Подобрать") ||
+    text.includes("подбор") ||
+    text.includes("образ") ||
+    text.includes("Квиз") ||
+    text.includes("квиз") ||
     text.includes("технических сложностей") ||
     text.includes("настроили за меня")
   ) {
@@ -877,11 +908,16 @@ async function handleMessage(message, env, host) {
     return;
   }
 
-  if (text === "💎 Тарифы и программы") {
-    const msg = `💎 <b>Тарифы и программы Oriva Lab</b>\n\nВыберите интересующую вас программу ниже, чтобы узнать подробности и начать запуск:`;
+  if (
+    text === "💎 Тарифы и цены" ||
+    text === "💎 Тарифы и программы" ||
+    text.includes("Тарифы") ||
+    text.includes("Цены") ||
+    text.includes("Услуги")
+  ) {
     await sendTelegramRequest(env, "sendMessage", {
       chat_id: telegramId,
-      text: msg,
+      text: TARIFFS_SUMMARY_TEXT,
       parse_mode: "HTML",
       reply_markup: programsKeyboard
     });

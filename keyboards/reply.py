@@ -5,10 +5,10 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text="🔮 Подобрать программу (Квиз)"),
+            KeyboardButton(text="✨ Подобрать образ"),
         ],
         [
-            KeyboardButton(text="💎 Тарифы и программы"),
+            KeyboardButton(text="💎 Тарифы и цены"),
         ],
         [
             KeyboardButton(text="👤 Личный кабинет"),
