@@ -10,11 +10,53 @@ const startKeyboard = {
 
 const mainMenuKeyboard = {
   keyboard: [
+    [{ text: "🔮 Подобрать программу (Квиз)" }],
     [{ text: "💎 Тарифы и программы" }],
     [{ text: "👤 Личный кабинет" }, { text: "💬 Техподдержка" }]
   ],
   resize_keyboard: true,
   one_time_keyboard: false
+};
+
+const QUIZ_STEP_1 = {
+  text: "🔮 <b>Подбор программы — Шаг 1 из 4</b>\n\nКаков ваш текущий статус в стриминге?",
+  reply_markup: {
+    inline_keyboard: [
+      [{ text: "🆕 Я только начинаю (запуск с нуля)", callback_data: "quiz_ans_exp_new" }],
+      [{ text: "📹 Уже стримлю с веб-камерой (переход на VTuber)", callback_data: "quiz_ans_exp_cam" }]
+    ]
+  }
+};
+
+const QUIZ_STEP_2 = {
+  text: "🔮 <b>Подбор программы — Шаг 2 из 4</b>\n\nНа каких платформах вы планируете стримить?",
+  reply_markup: {
+    inline_keyboard: [
+      [{ text: "🌐 Популярные (YouTube, Twitch, Kick, VK)", callback_data: "quiz_ans_goal_public" }],
+      [{ text: "🔞 Специализированные (18+ / Анонимно)", callback_data: "quiz_ans_goal_anonymous" }]
+    ]
+  }
+};
+
+const QUIZ_STEP_3 = {
+  text: "🔮 <b>Подбор программы — Шаг 3 из 4</b>\n\nКакая модель персонажа вас интересует?",
+  reply_markup: {
+    inline_keyboard: [
+      [{ text: "📄 Без модели (только инструкции)", callback_data: "quiz_ans_budget_none" }],
+      [{ text: "🎨 2D Live2D модель (аниме-стиль)", callback_data: "quiz_ans_budget_2d" }],
+      [{ text: "🧊 3D VRM модель (3D-трекинг)", callback_data: "quiz_ans_budget_3d" }]
+    ]
+  }
+};
+
+const QUIZ_STEP_4 = {
+  text: "🔮 <b>Подбор программы — Шаг 4 из 4</b>\n\nНужна ли вам личная помощь в настройке?",
+  reply_markup: {
+    inline_keyboard: [
+      [{ text: "📖 Настрою всё сам по инструкциям", callback_data: "quiz_ans_hardware_self" }],
+      [{ text: "👑 Хочу полное сопровождение под ключ", callback_data: "quiz_ans_hardware_premium" }]
+    ]
+  }
 };
 
 const programsKeyboard = {
@@ -25,7 +67,7 @@ const programsKeyboard = {
     [{ text: "🟣 АРХИВ 002 PREMIUM (49 900 ₽)", callback_data: "info_archive_002_premium" }],
     [{ text: "🔞 АРХИВ 003 (от 59 900 ₽)", callback_data: "info_archive_003" }],
     [{ text: "🔄 АРХИВ 004 — РЕСТАРТ (39 900 ₽)", callback_data: "info_archive_004" }],
-    [{ text: "🤝 ORIVA TALENTS (Агентство)", callback_data: "info_agency" }]
+    [{ text: "🤝 Работать с нами (15% от дохода)", callback_data: "info_agency" }]
   ]
 };
 
@@ -810,6 +852,24 @@ async function handleMessage(message, env, host) {
     return;
   }
   
+  if (
+    text === "🔮 Подобрать программу (Квиз)" ||
+    text === "/quiz" ||
+    text.includes("Квиз") ||
+    text.includes("Подобрать") ||
+    text.includes("технических сложностей") ||
+    text.includes("настроили за меня")
+  ) {
+    await saveUserState(env, telegramId, "Quiz:step1", {});
+    await sendTelegramRequest(env, "sendMessage", {
+      chat_id: telegramId,
+      text: QUIZ_STEP_1.text,
+      parse_mode: "HTML",
+      reply_markup: QUIZ_STEP_1.reply_markup
+    });
+    return;
+  }
+
   if (text === "💎 Тарифы и программы") {
     const msg = `💎 <b>Тарифы и программы Oriva Lab</b>\n\nВыберите интересующую вас программу ниже, чтобы узнать подробности и начать запуск:`;
     await sendTelegramRequest(env, "sendMessage", {
@@ -1119,6 +1179,109 @@ async function handleCallbackQuery(callback, env, host) {
     return;
   }
   
+  if (data === "quiz_start") {
+    await saveUserState(env, telegramId, "Quiz:step1", {});
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: QUIZ_STEP_1.text,
+      parse_mode: "HTML",
+      reply_markup: QUIZ_STEP_1.reply_markup
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+
+  if (data.startsWith("quiz_ans_exp_")) {
+    const expVal = data.substring(13);
+    await saveUserState(env, telegramId, "Quiz:step2", { exp: expVal });
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: QUIZ_STEP_2.text,
+      parse_mode: "HTML",
+      reply_markup: QUIZ_STEP_2.reply_markup
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+
+  if (data.startsWith("quiz_ans_goal_")) {
+    const goalVal = data.substring(14);
+    await saveUserState(env, telegramId, "Quiz:step3", { ...(stateData || {}), goal: goalVal });
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: QUIZ_STEP_3.text,
+      parse_mode: "HTML",
+      reply_markup: QUIZ_STEP_3.reply_markup
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+
+  if (data.startsWith("quiz_ans_budget_")) {
+    const budgetVal = data.substring(16);
+    await saveUserState(env, telegramId, "Quiz:step4", { ...(stateData || {}), budget: budgetVal });
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: QUIZ_STEP_4.text,
+      parse_mode: "HTML",
+      reply_markup: QUIZ_STEP_4.reply_markup
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+
+  if (data.startsWith("quiz_ans_hardware_")) {
+    const hardwareVal = data.substring(18);
+    const currentData = stateData || {};
+    const exp = currentData.exp || 'new';
+    const goal = currentData.goal || 'public';
+    const budget = currentData.budget || 'none';
+    const hardware = hardwareVal;
+
+    let recommendedKey = 'archive_002_basic';
+
+    if (exp === 'cam') {
+      recommendedKey = 'archive_004';
+    } else if (goal === 'anonymous') {
+      recommendedKey = 'archive_003';
+    } else if (hardware === 'premium') {
+      recommendedKey = 'archive_002_premium';
+    } else if (budget === '2d') {
+      recommendedKey = 'archive_002_2d';
+    } else if (budget === '3d') {
+      recommendedKey = 'archive_002_3d';
+    } else {
+      recommendedKey = 'archive_002_basic';
+    }
+
+    await deleteUserState(env, telegramId).catch(() => {});
+
+    const programText = formatProgram(recommendedKey);
+    const resultText = `🎉 <b>Результат подбора:</b>\n\nНа основе ваших ответов мы рекомендуем следующую программу:\n\n${programText}`;
+    
+    const resultKeyboard = {
+      inline_keyboard: [
+        [{ text: "💳 Оформить программу", callback_data: `buy_${recommendedKey}` }],
+        [{ text: "🔄 Пройти подбор заново", callback_data: "quiz_start" }],
+        [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
+      ]
+    };
+
+    await sendTelegramRequest(env, "editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: messageId,
+      text: resultText,
+      parse_mode: "HTML",
+      reply_markup: resultKeyboard
+    });
+    await sendTelegramRequest(env, "answerCallbackQuery", { callback_query_id: callback.id });
+    return;
+  }
+
   if (data === "main_menu") {
     await sendTelegramRequest(env, "editMessageText", {
       chat_id: telegramId,

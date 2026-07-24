@@ -5,19 +5,14 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text="🚀 Хочу всё настроить без технических сложностей"),
+            KeyboardButton(text="🔮 Подобрать программу (Квиз)"),
         ],
         [
-            KeyboardButton(text="🔞 Хочу работать на специализированных платформах (18+)"),
+            KeyboardButton(text="💎 Тарифы и программы"),
         ],
         [
-            KeyboardButton(text="⚙️ Хочу, чтобы вы всё настроили за меня"),
-        ],
-        [
-            KeyboardButton(text="🎥 Уже стримлю и хочу перейти в виртуальный формат"),
-        ],
-        [
-            KeyboardButton(text="🤝 Хочу работать с вашим агентством"),
+            KeyboardButton(text="👤 Личный кабинет"),
+            KeyboardButton(text="💬 Техподдержка"),
         ],
     ],
     resize_keyboard=True,
