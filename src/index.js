@@ -75,14 +75,14 @@ const TARIFFS_SUMMARY_TEXT = `💎 <b>Наши тарифы и услуги Oriv
 🟣 <b>АРХИВ 002 PREMIUM</b> — <code>49 900 ₽</code>
 <i>Личное сопровождение до первого эфира + 2D или 3D модель в подарок.</i>
 
-🔄 <b>АРХИВ 004 — РЕСТАРТ</b> — <code>39 900 ₽</code>
-<i>Пошаговый переход с веб-камеры на виртуальный формат без потери аудитории.</i>
-
 🔞 <b>АРХИВ 003</b> — <code>от 59 900 ₽</code>
 <i>Специализированный запуск на анонимных и 18+ площадках с защитой приватности.</i>
 
-🤝 <b>Работать с нами</b> — <code>15% от дохода</code>
-<i>Агентская программа: даём полную программу, подбираем модель и прописываем персонажа.</i>
+🔄 <b>АРХИВ 004 — РЕСТАРТ</b> — <code>39 900 ₽</code>
+<i>Пошаговый переход с веб-камеры на виртуальный формат без потери аудитории.</i>
+
+🤝 <b>Работать с нами</b> — <code>15% комиссии нашему агентству</code>
+<i>Полный подбор персонажа под вас, фишки, помогаем с регистрацией на любых платформах.</i>
 
 Нажмите кнопку программы ниже, чтобы открыть полное описание и сделать заказ:`;
 
@@ -92,9 +92,9 @@ const programsKeyboard = {
     [{ text: "🔵 АРХИВ 002 + 2D (29 900 ₽)", callback_data: "info_archive_002_2d" }],
     [{ text: "🔵 АРХИВ 002 + 3D (34 900 ₽)", callback_data: "info_archive_002_3d" }],
     [{ text: "🟣 АРХИВ 002 PREMIUM (49 900 ₽)", callback_data: "info_archive_002_premium" }],
-    [{ text: "🔄 АРХИВ 004 — РЕСТАРТ (39 900 ₽)", callback_data: "info_archive_004" }],
     [{ text: "🔞 АРХИВ 003 (от 59 900 ₽)", callback_data: "info_archive_003" }],
-    [{ text: "🤝 Работать с нами (15% от дохода)", callback_data: "info_agency" }]
+    [{ text: "🔄 АРХИВ 004 — РЕСТАРТ (39 900 ₽)", callback_data: "info_archive_004" }],
+    [{ text: "🤝 Работать с нами (15% комиссии)", callback_data: "info_agency" }]
   ]
 };
 
@@ -148,11 +148,11 @@ const PROGRAMS = {
       "Личное сопровождение — проходим все настройки вместе",
       "Помогаем скачать и настроить все программы",
       "Помощь с нишей и стратегией первых эфиров",
-      "2D или 3D модель — в подарок",
+      "2D или 3D модель — В ПОДАРОК (входит в стоимость)",
       "Скидка 5% на аудио переводчик",
       "Полный запуск с готовым планом на первую неделю"
     ],
-    result: "Личное сопровождение до первого эфира. Мы настраиваем всё за вас, а модель вы получаете в подарок."
+    result: "Максимальный пакет: запуск под ключ с персональным сопровождением и моделью в подарок."
   },
   archive_003: {
     title: "🔞 АРХИВ 003\nСпециализированный доступ",
@@ -278,10 +278,23 @@ function programActions(programKey) {
 }
 
 function confirmPurchase(programKey) {
-  const PAYWALL_URL = "https://paywall.ru/arrivalab";
+  const PAYWALL_MAP = {
+    archive_002_basic: "https://paywall.ru/arrivalab/products/1491893657",
+    archive_002_2d: "https://paywall.ru/arrivalab/products/1491893657",
+    archive_002_3d: "https://paywall.ru/arrivalab/products/1491893657",
+    archive_002_premium: "https://paywall.ru/arrivalab/products/1152545118",
+    archive_004: "https://paywall.ru/arrivalab/products/1194159971",
+    archive_003: "https://t.me/success_vstream",
+    agency: "https://t.me/success_vstream"
+  };
+  const payUrl = PAYWALL_MAP[programKey] || "https://paywall.ru/arrivalab/products/1491893657";
+  const isPaywall = payUrl.includes("paywall.ru");
+
   return {
     inline_keyboard: [
-      [{ text: "💳 Оплатить программу", url: PAYWALL_URL }],
+      [isPaywall ? { text: "💳 Перейти к оплате на Paywall", url: payUrl } : { text: "💬 Подать заявку / Оплатить", url: payUrl }],
+      [{ text: "💬 Вопрос по оплате", url: "https://t.me/success_vstream" }],
+      [{ text: "✨ Подобрать образ заново", callback_data: "quiz_start" }],
       [{ text: "🏠 Главное меню", callback_data: "main_menu" }]
     ]
   };
